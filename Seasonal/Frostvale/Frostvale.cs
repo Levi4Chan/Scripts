@@ -30,7 +30,7 @@ public class Frostvale
             Core.Logger($"it is Currently {DateTime.Now:MMMM}, The Maps Will Be out In December, as per the Design Notes.");
             return;
         }
-        
+
         IceCave();
         SnowGlobe();
         Alpine();
@@ -53,6 +53,9 @@ public class Frostvale
         DeerHunt();
         BowJangles();
         GlaceTomb();
+        Fimbultomb();
+        MountOtzi();
+        Otziwar();
     }
 
     public void IceCave()
@@ -397,7 +400,6 @@ public class Frostvale
         Story.KillQuest(2575, "creatures", "Red Bird", GetReward: false);
     }
 
-
     public void Darkwinter()
     {
         if (Core.isCompletedBefore(3260) || !Core.isSeasonalMapActive("darkwinter"))
@@ -536,7 +538,12 @@ public class Frostvale
         Story.KillQuest(3902, "icerisepast", "Guard Drumlin");
 
         // The Camp 3903
-        Story.KillQuest(3903, "icerisepast", "Drumlin");
+        if (!Story.QuestProgression(3903))
+        {
+            Core.EnsureAccept(3903);
+            Core.KillMonster("icerisepast", "r7", "Left", "Drumlin", "Inhabitant found", 7);
+            Core.EnsureComplete(3903);
+        }
 
         // Fire from the Hole 3904
         Story.KillQuest(3904, "icerisepast", "Ice Drumlinster");
@@ -573,7 +580,6 @@ public class Frostvale
         //Not avaiable
         //There is no quests over here
     }
-
 
     public void Cryostorm()
     {
@@ -676,6 +682,8 @@ public class Frostvale
     {
         if (Core.isCompletedBefore(5617) || !Core.isSeasonalMapActive("icepike"))
             return;
+
+        Icewindpass();
 
         Story.PreLoad(this);
 
@@ -929,7 +937,14 @@ public class Frostvale
         Story.KillQuest(7823, "darkoviaforest", "Lich Of The Stone");
 
         //Returning to Oblivion (7824)
-        Story.KillQuest(7824, "underworld", new[] { "Dreadfiend of Nulgath", "Infernalfiend", "Bloodfiend" });
+        if (!Story.QuestProgression(7824))
+        {
+            Core.EnsureAccept(7824);
+            Core.HuntMonster("underworld", "Dreadfiend of Nulgath", "Dreadfiend Gone", 5);
+            Core.HuntMonster("underworld", "Infernalfiend", "Infernalfiend Mauled", 5);
+            Core.HuntMonster("underworld", "Bloodfiend", "Bloodfiend Destroyed", 5);
+            Core.EnsureComplete(7824);
+        }
 
         //Both Sides are Guilty (7825)
         Story.KillQuest(7825, "judgement", new[] { "Aeacus", "Minos", "Rhadamanthys" });
@@ -946,7 +961,7 @@ public class Frostvale
 
     public void GlaceTomb()
     {
-        if (Core.isCompletedBefore(9507) || !Core.isSeasonalMapActive("frostvale"))
+        if (Core.isCompletedBefore(9506) || !Core.isSeasonalMapActive("frostvale"))
             return;
 
         Story.PreLoad(this);
@@ -986,10 +1001,157 @@ public class Frostvale
         Core.EquipClass(ClassType.Solo);
         // Academic Probation 9506
         Story.KillQuest(9506, "glacetomb", "Kriomein");
-
-        // Still Peace 9507
-        Story.KillQuest(9507, "glacetomb", new[] { "Kriomein", "Draugr", "Snow Fairy" });
     }
+
+    public void Fimbultomb()
+    {
+        if (Core.isCompletedBefore(9518) || !Core.isSeasonalMapActive("fimbultomb"))
+            return;
+
+        GlaceTomb();
+
+        // Hold the Door 9509
+        Story.MapItemQuest(9509, "fimbultomb", new[] { 12490, 12491 });
+        Story.KillQuest(9509, "fimbultomb", "Draugr");
+
+        // Floral Remedy 9510
+        Story.MapItemQuest(9510, "fimbultomb", 12492, 7);
+        Story.KillQuest(9510, "fimbultomb", "Sullied Auberon");
+
+        // Caving Hazards 9511
+        Story.KillQuest(9511, "fimbultomb", new[] { "Sullied Auberon", "Draugr" });
+
+        // Poetic Ettin 9512
+        Story.MapItemQuest(9512, "fimbultomb", 12493);
+        Story.KillQuest(9512, "fimbultomb", "Ettin Golem");
+
+        // In the Field 9513
+        Story.MapItemQuest(9513, "fimbultomb", new[] { 12494, 12495, 12496 });
+
+        // Nectar Tea 9514
+        Story.MapItemQuest(9514, "fimbultomb", 12497, 7);
+        Story.KillQuest(9514, "fimbultomb", "Ettin Golem");
+
+        // Copied Homework 9515
+        Story.KillQuest(9515, "fimbultomb", "Daselm");
+
+        // Nepomancer 9516
+        Story.KillQuest(9516, "fimbultomb", "Peter");
+
+        // Invert the Cycle 9517
+        Story.MapItemQuest(9517, "fimbultomb", 12498, 2);
+        Story.KillQuest(9517, "fimbultomb", "Ettin Golem");
+
+        // Death Squall 9518
+        Story.KillQuest(9518, "fimbultomb", "Fimbulventr Witch");
+    }
+
+    public void MountOtzi()
+    {
+        if (!Core.isSeasonalMapActive("MountOtzi"))
+            return;
+        if (Core.isCompletedBefore(8444))
+            return;
+
+        Fimbultomb();
+
+        Story.PreLoad(this);
+
+        // Light Midnight
+        Story.MapItemQuest(8434, "MountOtzi", 9437, 7);
+
+        // Actaeon Stew
+        Story.KillQuest(8435, "MountOtzi", "Stitched Stag");
+
+        // Vain Howl
+        Story.KillQuest(8436, "MountOtzi", "Gauden Hound");
+
+        // Holle's Meal
+        if (!Story.QuestProgression(8437))
+        {
+            Story.MapItemQuest(8437, "MountOtzi", 9388);
+            Story.MapItemQuest(8437, "MountOtzi", 9387, 6);
+            Story.KillQuest(8437, "MountOtzi", "Stitched Stag");
+        }
+
+        // The Hidden One
+        if (!Story.QuestProgression(8438))
+        {
+            Story.MapItemQuest(8438, "MountOtzi", 9389);
+            Story.KillQuest(8438, "MountOtzi", "Gauden Hound");
+        }
+
+        //MountOtzi's Stones
+        if (!Story.QuestProgression(8439))
+        {
+            Story.MapItemQuest(8439, "MountOtzi", 9390, 7);
+            Story.KillQuest(8439, "MountOtzi", new[] { "Gauden Hound", "Mangled Stag" });
+        }
+
+        //Faceless Hunters
+        if (!Story.QuestProgression(8440))
+        {
+            Story.KillQuest(8440, "MountOtzi", "Sluagh Warrior");
+            Story.MapItemQuest(8440, "MountOtzi", 9391);
+        }
+
+        //Stitch Work
+        if (!Story.QuestProgression(8441))
+        {
+            Story.KillQuest(8441, "MountOtzi", "Mangled Stag");
+            Story.MapItemQuest(8441, "MountOtzi", 9392);
+        }
+
+        //Killer Promotion
+        if (!Story.QuestProgression(8442))
+        {
+            Story.KillQuest(8442, "MountOtzi", "Sluagh Warrior");
+            Story.MapItemQuest(8442, "MountOtzi", 9393, 7);
+        }
+
+        //Cold Pleasures
+        if (!Story.QuestProgression(8443))
+        {
+            Story.KillQuest(8443, "MountOtzi", "Sluagh Warrior");
+            Story.MapItemQuest(8443, "MountOtzi", 9394);
+        }
+
+        //Corvus Mellori
+        Story.KillQuest(8444, "MountOtzi", "Sluagh Mellori", AutoCompleteQuest: false);
+    }
+
+    public void Otziwar()
+    {
+        if (Core.isCompletedBefore(8451))
+            return;
+
+        MountOtzi();
+
+        Story.PreLoad(this);
+
+        // Sluagh Medals 8446 (8447 is mega and not neede)
+        if (!Story.QuestProgression(8448))
+        {
+            Core.EnsureAccept(8446);
+            Core.HuntMonster("otziwar", "Sluagh Warrior", "Sluagh Medals", 5);
+            Core.EnsureComplete(8446);
+        }
+
+        // Glacial Archaeology 8448
+        Story.KillQuest(8448, "otziwar", "Sluagh Warrior");
+
+        // Calcium Dating 8449
+        Story.KillQuest(8449, "otziwar", "Gauden Hound");
+
+        // Circling Crows 8450
+        Story.KillQuest(8450, "otziwar", "Sluagh Mellori");
+
+
+        // Powder Snow 8451         
+        Story.KillQuest(8451, "otziwar", "Huntress Valais");
+    }
+
+
 
     // --------------------------------------------------------------------------------------------------------------------------
 

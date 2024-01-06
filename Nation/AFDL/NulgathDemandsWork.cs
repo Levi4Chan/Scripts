@@ -95,10 +95,17 @@ public class NulgathDemandsWork
                     while (!Bot.ShouldExit && Core.CheckInventory("Archfiend Essence Fragment", 9) && !Core.CheckInventory("Unidentified 35", quant))
                         Adv.BuyItem("tercessuinotlim", 1951, item.ID, shopItemID: 7912);
 
-                    if (!Core.CheckInventory(item.ID, quant))
-                        Core.EnsureComplete(5259, item.ID);
+                    if (!Core.CheckInventory(NDWItems))
+                    {
+                        foreach (string NDWItem in NDWItems)
+                            if (!Core.CheckInventory(NDWItem))
+                                Core.EnsureCompleteChoose(5259, new[] { NDWItem });
+                            else Core.Logger("all NDW items owned, completing quest without Selecting reward.\n" +
+                            "(will still get \"Archfiend Essence Fragment\" and uni 35.)");
+                    }
+                    else Core.EnsureComplete(5259);
                 }
-                else Core.EnsureComplete(5259, item.ID);
+                else Core.EnsureCompleteChoose(5259, item.Name == "Archfiend Essence Fragment" ? NDWItems : new[] { item.Name });
             }
         }
     }
@@ -113,10 +120,30 @@ public class NulgathDemandsWork
         Nation.Supplies("Unidentified 26", 1);
         Core.EnsureAccept(584);
         Nation.ResetSindles();
-        string[] locations = new[] { "tercessuinotlim", Core.IsMember ? "Nulgath" : "evilmarsh" };
-        string location = locations[new Random().Next(locations.Length)];
-        string cell = location == "tercessuinotlim" ? (new Random().Next(2) == 0 ? "m1" : "m2") : "Field1";
-        Core.KillMonster(location, cell, "Left", "Dark Makai", "Dark Makai Sigil", log: false);
+        while (!Bot.ShouldExit && !Core.CheckInventory("Dark Makai Sigil"))
+        {
+            // Define the maps with their corresponding indexes
+            var maps = new[] { ("tercessuinotlim", "m1"), (Core.IsMember ? "Nulgath" : "evilmarsh", "Field1") };
+
+            // Randomly select a map
+            var randomMapIndex = new Random().Next(0, maps.Length);
+            var selectedMap = maps[randomMapIndex];
+
+            Core.Join(selectedMap.Item1, selectedMap.Item2, "Left");
+
+            while (!Bot.ShouldExit &&
+                (selectedMap.Item1 == "tercessuinotlim"
+                    ? (Core.IsMonsterAlive(2, useMapID: true) || Core.IsMonsterAlive(3, useMapID: true))
+                    : (Core.IsMonsterAlive(1, useMapID: true) || Core.IsMonsterAlive(2, useMapID: true))))
+            {
+                if (!Bot.Player.InCombat)
+                    Core.Sleep();  // Use the built-in delay
+                Bot.Combat.Attack("*");
+                if (Core.CheckInventory("Dark Makai Sigil"))
+                    break;
+            }
+        }
+        Bot.Wait.ForPickup("Dark Makai Sigil");
         Core.EnsureComplete(584);
         Bot.Wait.ForPickup("Unidentified 27");
         Core.Logger("Uni 27 acquired");

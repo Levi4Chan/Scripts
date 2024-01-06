@@ -154,16 +154,16 @@ public class CoreBLOD
 
     #region Materials
 
-    public void SpiritOrb(int quant)
+    public void SpiritOrb(int quant = 65000)
     {
         if (Core.CheckInventory("Spirit Orb", quant))
             return;
 
-        farmFindingFrag(WeaponOfDestiny.Blade, "Spirit Orb", quant);
-        farmFindingFrag(WeaponOfDestiny.Broadsword, "Spirit Orb", quant);
+        farmFindingFrag(WeaponOfDestiny.Blade, "Spirit Orb", quant > 65000 ? 65000 : quant);
+        farmFindingFrag(WeaponOfDestiny.Broadsword, "Spirit Orb", quant > 65000 ? 65000 : quant);
 
         // Default
-        SoulSearching("Spirit Orb", quant);
+        SoulSearching("Spirit Orb", quant > 65000 ? 65000 : quant);
     }
 
     public void LoyalSpiritOrb(int quant)
@@ -177,10 +177,10 @@ public class CoreBLOD
         farmUltimateWK("Loyal Spirit Orb", quant);
 
         // Default
-        if (!Core.CheckInventory("Loyal Spirit Orb", quant))
+        while (!Bot.ShouldExit && !Core.CheckInventory("Loyal Spirit Orb", quant))
         {
             Core.FarmingLogger("Loyal Spirit Orb", quant);
-            SpiritOrb(100 * quant);
+            SpiritOrb(100 * (quant - (Bot.Inventory.Items.FirstOrDefault(x => x.Name == "Loyal Spirit Orb")?.Quantity ?? 0)));
             LightMerge("Loyal Spirit Orb", quant);
         }
     }
@@ -196,10 +196,11 @@ public class CoreBLOD
         farmUltimateWK("Bright Aura", quant);
 
         // Default
-        if (!Core.CheckInventory("Bright Aura", quant))
+        while (!Bot.ShouldExit && !Core.CheckInventory("Bright Aura", quant))
         {
             Core.FarmingLogger("Bright Aura", quant);
-            LoyalSpiritOrb(50 * quant);
+            LoyalSpiritOrb(50 * (quant - (Bot.Inventory.Items.FirstOrDefault(x => x.Name == "Bright Aura")?.Quantity ?? 0)));
+
             LightMerge("Bright Aura", quant);
         }
     }
@@ -212,10 +213,10 @@ public class CoreBLOD
         farmFindingFrag(WeaponOfDestiny.Mace, "Brilliant Aura", quant);
 
         // Default
-        if (!Core.CheckInventory("Brilliant Aura", quant))
+        while (!Bot.ShouldExit && !Core.CheckInventory("Brilliant Aura", quant))
         {
             Core.FarmingLogger("Brilliant Aura", quant);
-            BrightAura(25 * quant);
+            BrightAura(25 * (quant - (Bot.Inventory.Items.FirstOrDefault(x => x.Name == "Brilliant Aura")?.Quantity ?? 0)));
             LightMerge("Brilliant Aura", quant);
         }
     }
@@ -235,7 +236,7 @@ public class CoreBLOD
         farmFindingFrag(WeaponOfDestiny.Daggers, "Blinding Aura", quant);
     }
 
-    public void SoulSearching(string item, int quant, bool farmSpiritOrbs = true)
+    public void SoulSearching(string item = "Spirit Orb", int quant = 1, bool farmSpiritOrbs = true)
     {
         if (Core.CheckInventory(item, quant))
             return;
@@ -244,23 +245,25 @@ public class CoreBLOD
             BattleUnder.BattleUnderC();
 
         Core.EquipClass(ClassType.Solo);
-        Core.FarmingLogger(item, quant);
 
         Core.AddDrop("Cavern Celestite", "Undead Essence");
         if (farmSpiritOrbs)
         {
-            Core.RegisterQuests(939, 2082, 2083); // + Bone Some Dust & Essential Essences
+            Core.RegisterQuests(2082, 2083); // Bone Some Dust & Essential Essences
             Core.AddDrop("Bone Dust", "Undead Energy", "Spirit Orb");
         }
-        else Core.RegisterQuests(939);
 
         while (!Bot.ShouldExit && !Core.CheckInventory(item, quant))
         {
-            Core.HuntMonsterMapID("battleundera", 12, "Bone Terror Soul", log: false);
-            Core.HuntMonsterMapID("battleunderb", 8, "Undead Champion Soul", log: false);
-            Core.HuntMonsterMapID("battleunderc", 9, "Jellyfish Soul", log: false);
+            Core.EnsureAccept(939);
 
+            Core.KillMonster("battleundera", "r7", "Left", "Bone Terror", "Bone Terror Soul", log: false);
+            Core.KillMonster("battleunderb", "r3", "Right", "Undead Champion", "Undead Champion Soul", log: false);
+            Core.KillMonster("battleunderc", "r5", "Left", "Crystalized Jellyfish", "Jellyfish Soul", log: false);
+
+            Core.EnsureComplete(939);
             Bot.Wait.ForPickup(item);
+
         }
         Core.CancelRegisteredQuests();
     }
@@ -583,7 +586,7 @@ public class CoreBLOD
     private List<ShopItem>? LightMergeShopItems = null;
 
     private void LightMerge(string item, int quant = 1)
-        => Core.BuyItem("necropolis", 422, item, quant);
+        => Core.BuyItem("necropolis", 422, item);
 }
 
 public enum WeaponOfDestiny

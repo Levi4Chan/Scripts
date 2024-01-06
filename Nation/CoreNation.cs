@@ -55,7 +55,8 @@ public class CoreNation
         "Bone Dust",
         "Nulgath's Approval",
         "Archfiend's Favor",
-        "Unidentified 34"
+        "Unidentified 34",
+        "Essence of Nulgath"
     };
 
     public string[] SuppliesRewards =
@@ -66,7 +67,8 @@ public class CoreNation
     "Voucher of Nulgath",
     "Voucher of Nulgath (non-mem)",
     "Gem of Nulgath",
-    "Unidentified 10"
+    "Unidentified 10",
+    "Essence of Nulgath"
     };
 
     /// <summary>
@@ -315,10 +317,30 @@ public class CoreNation
             Supplies("Unidentified 16");
             Supplies("Unidentified 20");
             ResetSindles();
-            string[] locations = new[] { "tercessuinotlim", Core.IsMember ? "Nulgath" : "evilmarsh" };
-            string location = locations[new Random().Next(locations.Length)];
-            string cell = location == "tercessuinotlim" ? (new Random().Next(2) == 0 ? "m1" : "m2") : "Field1";
-            Core.KillMonster(location, cell, "Left", "Dark Makai", "Dark Makai Rune");
+            while (!Bot.ShouldExit && !Core.CheckInventory("Dark Makai Rune"))
+            {
+                // Define the maps with their corresponding indexes
+                var maps = new[] { ("tercessuinotlim", "m1"), (Core.IsMember ? "Nulgath" : "evilmarsh", "Field1") };
+
+                // Randomly select a map
+                var randomMapIndex = new Random().Next(0, maps.Length);
+                var selectedMap = maps[randomMapIndex];
+
+                Core.Join(selectedMap.Item1, selectedMap.Item2, "Left");
+
+                while (!Bot.ShouldExit &&
+                    (selectedMap.Item1 == "tercessuinotlim"
+                        ? (Core.IsMonsterAlive(2, useMapID: true) || Core.IsMonsterAlive(3, useMapID: true))
+                        : (Core.IsMonsterAlive(1, useMapID: true) || Core.IsMonsterAlive(2, useMapID: true))))
+                {
+                    if (!Bot.Player.InCombat)
+                        Core.Sleep();  // Use the built-in delay
+                    Bot.Combat.Attack("*");
+                    if (Core.CheckInventory("Dark Makai Rune"))
+                        break;
+                }
+            }
+            Bot.Wait.ForPickup("Dark Makai Rune");
             Core.EnsureComplete(7551, Item.ID);
             if (Item.Name != "Voucher of Nulgath" && sellMemVoucher)
                 Core.SellItem("Voucher of Nulgath", all: true);
@@ -393,23 +415,19 @@ public class CoreNation
                 {
                     case "Tainted Gem":
                         Supplies("Diamond of Nulgath", 45);
-                        ContractExchange(ChooseReward.TaintedGem, quant > 1 ? quant : Reward.MaxStack);
+                        ContractExchange(ContractExchangeRewards.Tainted_Gem, quant > 1 ? quant : Reward.MaxStack);
                         break;
                     case "Dark Crystal Shard":
                         Supplies("Diamond of Nulgath", 45);
-                        ContractExchange(ChooseReward.DarkCrystalShard, quant > 1 ? quant : Reward.MaxStack);
+                        ContractExchange(ContractExchangeRewards.Dark_Crystal_Shard, quant > 1 ? quant : Reward.MaxStack);
                         break;
                     case "Gem of Nulgath":
                         Supplies("Diamond of Nulgath", 45);
-                        ContractExchange(ChooseReward.GemofNulgath, quant > 1 ? quant : Reward.MaxStack);
+                        ContractExchange(ContractExchangeRewards.Gem_of_Nulgath, quant > 1 ? quant : Reward.MaxStack);
                         break;
                     case "Blood Gem of the Archfiend":
                         Supplies("Diamond of Nulgath", 45);
-                        ContractExchange(ChooseReward.BloodGemoftheArchfiend, quant > 1 ? quant : Reward.MaxStack);
-                        break;
-                    // Add more cases for other rewards
-                    default:
-                        Core.Logger("Default case");
+                        ContractExchange(ContractExchangeRewards.Blood_Gem_of_the_Archfiend, quant > 1 ? quant : Reward.MaxStack);
                         break;
                 }
             }
@@ -418,7 +436,7 @@ public class CoreNation
         {
             foreach (string? thing in rewards)
             {
-                ItemBase? Reward = Bot.Quests.EnsureLoad(870)?.Rewards.Find(item => item.Name == thing);
+                ItemBase? Reward = Bot.Quests.EnsureLoad(870)?.Rewards.Find(item => item.Name == thing) ?? new ItemBase();
                 Core.FarmingLogger(Reward.Name, quant);
                 while (!Bot.ShouldExit && !Core.CheckInventory(Reward.Name, quant > 1 ? quant : Reward.MaxStack))
                 {
@@ -426,23 +444,19 @@ public class CoreNation
                     {
                         case "Tainted Gem":
                             Supplies("Diamond of Nulgath", 45);
-                            ContractExchange(ChooseReward.TaintedGem, quant > 1 ? quant : Reward.MaxStack);
+                            ContractExchange(ContractExchangeRewards.Tainted_Gem, quant > 1 ? quant : Reward.MaxStack);
                             break;
                         case "Dark Crystal Shard":
                             Supplies("Diamond of Nulgath", 45);
-                            ContractExchange(ChooseReward.DarkCrystalShard, quant > 1 ? quant : Reward.MaxStack);
+                            ContractExchange(ContractExchangeRewards.Dark_Crystal_Shard, quant > 1 ? quant : Reward.MaxStack);
                             break;
                         case "Gem of Nulgath":
                             Supplies("Diamond of Nulgath", 45);
-                            ContractExchange(ChooseReward.GemofNulgath, quant > 1 ? quant : Reward.MaxStack);
+                            ContractExchange(ContractExchangeRewards.Gem_of_Nulgath, quant > 1 ? quant : Reward.MaxStack);
                             break;
                         case "Blood Gem of the Archfiend":
                             Supplies("Diamond of Nulgath", 45);
-                            ContractExchange(ChooseReward.BloodGemoftheArchfiend, quant > 1 ? quant : Reward.MaxStack);
-                            break;
-                        // Add more cases for other rewards
-                        default:
-                            Core.Logger("Default case");
+                            ContractExchange(ContractExchangeRewards.Blood_Gem_of_the_Archfiend, quant > 1 ? quant : Reward.MaxStack);
                             break;
                     }
                 }
@@ -535,7 +549,7 @@ public class CoreNation
     /// Farms Totem of Nulgath/Gem of Nulgath with Voucher Item: Totem of Nulgath quest
     /// </summary>
     /// <param name="reward">Which reward to pick (totem or gem)</param>
-    public void VoucherItemTotemofNulgath(ChooseReward reward = ChooseReward.TotemofNulgath)
+    public void VoucherItemTotemofNulgath(VoucherItemTotem reward = VoucherItemTotem.Totem_of_Nulgath)
     {
         if (!Core.CheckInventory("Voucher of Nulgath (non-mem)"))
             FarmVoucher(false);
@@ -631,7 +645,7 @@ public class CoreNation
     /// </summary>
     /// <param name="item">Desired item name.</param>
     /// <param name="quant">Desired item quantity.</param>
-    public void Supplies(string? item = null, int quant = 1)
+    public void Supplies(string? item = null, int quant = 1, bool UltraAlteon = false)
     {
         bool sellMemVoucher = Core.CBOBool("Nation_SellMemVoucher", out bool _sellMemVoucher) && _sellMemVoucher;
         bool returnPolicyDuringSupplies = Core.CBOBool("Nation_ReturnPolicyDuringSupplies", out bool _returnSupplies) && _returnSupplies;
@@ -649,13 +663,16 @@ public class CoreNation
                 ItemBase? Item = rewards.Find(x => x.Name == Thing);
 
                 if (Core.CheckInventory(CragName))
-                    BambloozevsDrudgen(Item.Name, Item.MaxStack);
+                    BambloozevsDrudgen(Item!.Name, Item.MaxStack);
                 else
                 {    // Find the corresponding item in quest rewards
 
                     while (!Bot.ShouldExit && Item != null && !Core.CheckInventory(Item.Name, Item.MaxStack))
                     {
-                        Core.KillEscherion(Item.Name, Item.MaxStack, log: false);
+                        if (UltraAlteon)
+                            Core.HuntMonster("ultraalteon", "Ultra Alteon", Item.Name, Item.MaxStack, log: false);
+                        else
+                            Core.KillEscherion(Item.Name, Item.MaxStack, log: false);
 
                         if (item != "Voucher of Nulgath" && _sellMemVoucher && Core.CheckInventory("Voucher of Nulgath"))
                         {
@@ -683,7 +700,10 @@ public class CoreNation
             {
                 while (!Bot.ShouldExit && !Core.CheckInventory(item, quant))
                 {
-                    Core.KillEscherion(item, quant, log: false);
+                    if (UltraAlteon)
+                        Core.HuntMonster("ultraalteon", "Ultra Alteon", item, quant, log: false);
+                    else
+                        Core.KillEscherion(item, quant, log: false);
 
                     if (item != "Voucher of Nulgath" && _sellMemVoucher && Core.CheckInventory("Voucher of Nulgath"))
                     {
@@ -778,10 +798,30 @@ public class CoreNation
 
                         Core.FarmingLogger(Item2.Name, Item2.MaxStack);
                         Core.EnsureAccept(7551);
-                        string[] locations = new[] { "tercessuinotlim", Core.IsMember ? "Nulgath" : "evilmarsh" };
-                        string location = locations[new Random().Next(locations.Length)];
-                        string cell = location == "tercessuinotlim" ? (new Random().Next(2) == 0 ? "m1" : "m2") : "Field1";
-                        Core.KillMonster(location, cell, "Left", "Dark Makai", "Dark Makai Rune");
+                        while (!Bot.ShouldExit && !Core.CheckInventory("Dark Makai Rune"))
+                        {
+                            // Define the maps with their corresponding indexes
+                            var maps = new[] { ("tercessuinotlim", "m1"), (Core.IsMember ? "Nulgath" : "evilmarsh", "Field1") };
+
+                            // Randomly select a map
+                            var randomMapIndex = new Random().Next(0, maps.Length);
+                            var selectedMap = maps[randomMapIndex];
+
+                            Core.Join(selectedMap.Item1, selectedMap.Item2, "Left");
+
+                            while (!Bot.ShouldExit &&
+                                (selectedMap.Item1 == "tercessuinotlim"
+                                    ? (Core.IsMonsterAlive(2, useMapID: true) || Core.IsMonsterAlive(3, useMapID: true))
+                                    : (Core.IsMonsterAlive(1, useMapID: true) || Core.IsMonsterAlive(2, useMapID: true))))
+                            {
+                                if (!Bot.Player.InCombat)
+                                    Core.Sleep();  // Use the built-in delay
+                                Bot.Combat.Attack("*");
+                                if (Core.CheckInventory("Dark Makai Rune"))
+                                    break;
+                            }
+                        }
+                        Bot.Wait.ForPickup("Dark Makai Rune");
 
                         if (Reward != SwindlesReturnReward.None)
                             Core.EnsureComplete(7551, Item2.ID);
@@ -818,10 +858,30 @@ public class CoreNation
                     Core.FarmingLogger(Item2.Name, Item2.MaxStack);
                     Core.EnsureAccept(7551);
 
-                    string[] locations = new[] { "tercessuinotlim", Core.IsMember ? "Nulgath" : "evilmarsh" };
-                    string location = locations[new Random().Next(locations.Length)];
-                    string cell = location == "tercessuinotlim" ? (new Random().Next(2) == 0 ? "m1" : "m2") : "Field1";
-                    Core.KillMonster(location, cell, "Left", "Dark Makai", "Dark Makai Rune");
+                    while (!Bot.ShouldExit && !Core.CheckInventory("Dark Makai Rune"))
+                    {
+                        // Define the maps with their corresponding indexes
+                        var maps = new[] { ("tercessuinotlim", "m1"), (Core.IsMember ? "Nulgath" : "evilmarsh", "Field1") };
+
+                        // Randomly select a map
+                        var randomMapIndex = new Random().Next(0, maps.Length);
+                        var selectedMap = maps[randomMapIndex];
+
+                        Core.Join(selectedMap.Item1, selectedMap.Item2, "Left");
+
+                        while (!Bot.ShouldExit &&
+                            (selectedMap.Item1 == "tercessuinotlim"
+                                ? (Core.IsMonsterAlive(2, useMapID: true) || Core.IsMonsterAlive(3, useMapID: true))
+                                : (Core.IsMonsterAlive(1, useMapID: true) || Core.IsMonsterAlive(2, useMapID: true))))
+                        {
+                            if (!Bot.Player.InCombat)
+                                Core.Sleep();  // Use the built-in delay
+                            Bot.Combat.Attack("*");
+                            if (Core.CheckInventory("Dark Makai Rune"))
+                                break;
+                        }
+                    }
+                    Bot.Wait.ForPickup("Dark Makai Rune");
 
 
                     if (Reward != SwindlesReturnReward.None)
@@ -955,27 +1015,64 @@ public class CoreNation
 
             if (item != "Voucher of Nulgath" && _sellMemVoucher && Core.CheckInventory("Voucher of Nulgath"))
             {
-                while (!Bot.ShouldExit && (Bot.Player.HasTarget || Bot.Player.InCombat) && Bot.Player.Cell != "Enter")
+                do
                 {
+                    // Ensure not in combat or has a target
                     Bot.Combat.CancelTarget();
                     Bot.Wait.ForCombatExit();
-                    Core.Jump("Enter", "Spawn");
                     Core.Sleep();
-                }
 
+                    // Jump to "Enter" and wait until successfully in "Enter" cell
+                    do
+                    {
+                        Core.Sleep();
+                        Core.Jump("Enter", "Spawn");
+
+                        if (Bot.Player.Cell == "Enter")
+                            break;
+
+                    } while (!Bot.ShouldExit && Bot.Player.Cell != "Enter");
+
+                } while (!Bot.ShouldExit && (Bot.Player.HasTarget || Bot.Player.InCombat) && Bot.Player.Cell != "Enter");
+
+                // Pickup and sell the item
                 Bot.Drops.Pickup("Voucher of Nulgath");
                 Core.SellItem("Voucher of Nulgath", all: true);
                 Bot.Wait.ForItemSell();
             }
 
 
+
             if (returnPolicyDuringSupplies && Core.CheckInventory(new[] { Uni(1), Uni(6), Uni(9), Uni(16), Uni(20) }))
             {
                 ResetSindles();
-                string[] locations = new[] { "tercessuinotlim", Core.IsMember ? "Nulgath" : "evilmarsh" };
-                string location = locations[new Random().Next(locations.Length)];
-                string cell = location == "tercessuinotlim" ? (new Random().Next(2) == 0 ? "m1" : "m2") : "Field1";
-                Core.KillMonster(location, cell, "Left", "Dark Makai", "Dark Makai Rune");
+                while (!Bot.ShouldExit && !Core.CheckInventory("Dark Makai Rune"))
+                {
+                    // Define the maps with their corresponding indexes
+                    var maps = new[] { ("tercessuinotlim", "m1"), (Core.IsMember ? "Nulgath" : "evilmarsh", "Field1") };
+
+                    // Randomly select a map
+                    var randomMapIndex = new Random().Next(0, maps.Length);
+                    var selectedMap = maps[randomMapIndex];
+
+                    Core.Join(selectedMap.Item1, selectedMap.Item2, "Left");
+
+                    while (!Bot.ShouldExit &&
+                        (selectedMap.Item1 == "tercessuinotlim"
+                            ? (Core.IsMonsterAlive(2, useMapID: true) || Core.IsMonsterAlive(3, useMapID: true))
+                            : (Core.IsMonsterAlive(1, useMapID: true) || Core.IsMonsterAlive(2, useMapID: true))))
+                    {
+                        if (!Bot.Player.InCombat)
+                            Core.Sleep();  // Use the built-in delay
+                        Bot.Combat.Attack("*");
+                        if (Core.CheckInventory("Dark Makai Rune"))
+                            break;
+                    }
+                }
+
+
+
+                Bot.Wait.ForPickup("Dark Makai Rune");
 
                 if (item != null && rewardItemIds.TryGetValue(item, out int itemId))
                     Core.EnsureCompleteMulti(7551, itemId);
@@ -1126,13 +1223,33 @@ public class CoreNation
         if (farmDiamond)
             BambloozevsDrudgen("Diamond of Nulgath", 15);
         Core.EnsureAccept(869);
-        string[] locations = new[] { "tercessuinotlim", Core.IsMember ? "Nulgath" : "evilmarsh" };
-        string location = locations[new Random().Next(locations.Length)];
-        string cell = location == "tercessuinotlim" ? (new Random().Next(2) == 0 ? "m1" : "m2") : "Field1";
-        Core.KillMonster(location, cell, "Left", "Dark Makai", "Dark Makai Sigil", log: false);
+        Core.EquipClass(ClassType.Solo);
 
+        while (!Bot.ShouldExit && !Core.CheckInventory("Dark Makai Sigil"))
+        {
+            // Define the maps with their corresponding indexes
+            var maps = new[] { ("tercessuinotlim", "m1"), (Core.IsMember ? "Nulgath" : "evilmarsh", "Field1") };
+
+            // Randomly select a map
+            var randomMapIndex = new Random().Next(0, maps.Length);
+            var selectedMap = maps[randomMapIndex];
+
+            Core.Join(selectedMap.Item1, selectedMap.Item2, "Left");
+
+            while (!Bot.ShouldExit &&
+                (selectedMap.Item1 == "tercessuinotlim"
+                    ? (Core.IsMonsterAlive(2, useMapID: true) || Core.IsMonsterAlive(3, useMapID: true))
+                    : (Core.IsMonsterAlive(1, useMapID: true) || Core.IsMonsterAlive(2, useMapID: true))))
+            {
+                if (!Bot.Player.InCombat)
+                    Core.Sleep();  // Use the built-in delay
+                Bot.Combat.Attack("*");
+                if (Core.CheckInventory("Dark Makai Sigil"))
+                    break;
+            }
+        }
+        Bot.Wait.ForPickup("Dark Makai Sigil");
         Core.EnsureComplete(869);
-        Core.Logger("Completed");
     }
 
     /// <summary>
@@ -1140,8 +1257,9 @@ public class CoreNation
     /// </summary>
     /// <param name="reward">Desired reward</param>
     /// <param name="farmUni13">Whether or not farm Uni 13</param>
-    public void ContractExchange(ChooseReward reward, int quant, bool farmUni13 = true)
+    public void ContractExchange(ContractExchangeRewards rewardEnum, int quant, bool farmUni13 = true)
     {
+        string reward = rewardEnum.ToString().Replace("_", " ");
         if ((!Core.CheckInventory("Unidentified 13") && !farmUni13) || !Core.CheckInventory("Drudgen the Assistant"))
         {
             if ((!Core.CheckInventory("Unidentified 13") && !farmUni13))
@@ -1154,14 +1272,14 @@ public class CoreNation
 
         Core.AddDrop(bagDrops);
         Core.EquipClass(ClassType.Solo);
-        Core.FarmingLogger(reward.ToString(), quant);
+        Core.FarmingLogger(reward.ToString().Replace("_", " "), quant);
         while (!Bot.ShouldExit && !Core.CheckInventory(reward.ToString(), quant))
         {
             if (farmUni13 && !Core.CheckInventory("Unidentified 13"))
                 FarmUni13(3);
             Core.EnsureAccept(870);
             Core.KillMonster("tercessuinotlim", "m4", "Top,", "Shadow of Nulgath", "Blade Master Rune", log: false);
-            Core.EnsureComplete(870, (int)reward);
+            Core.EnsureComplete(870, (int)rewardEnum);
             Core.Logger($"Exchanged for {reward}");
         }
     }
@@ -1296,7 +1414,7 @@ public class CoreNation
         Core.AddDrop("Gem of Nulgath");
         VoidKightSwordQuest("Gem of Nulgath", quant);
         while (!Bot.ShouldExit && !Core.CheckInventory("Gem of Nulgath", quant))
-            VoucherItemTotemofNulgath(ChooseReward.GemofNulgath);
+            VoucherItemTotemofNulgath(VoucherItemTotem.Gem_of_Nulgath);
     }
 
     /// <summary>
@@ -1378,7 +1496,7 @@ public class CoreNation
         while (!Bot.ShouldExit && !Core.CheckInventory("Totem of Nulgath", quant))
         {
             // Complete the Voucher Item: Totem of Nulgath quest with the TotemofNulgath reward
-            VoucherItemTotemofNulgath(ChooseReward.TotemofNulgath);
+            VoucherItemTotemofNulgath(VoucherItemTotem.Totem_of_Nulgath);
 
             if (Bot.Inventory.IsMaxStack("Totem of Nulgath"))
                 Core.Logger("Max Stack Hit.");
@@ -1908,12 +2026,22 @@ public class CoreNation
 
 public enum ChooseReward
 {
-    TaintedGem = 4769,
-    DarkCrystalShard = 4770,
-    DiamondofNulgath = 4771,
-    GemofNulgath = 6136,
-    BloodGemoftheArchfiend = 22332,
-    TotemofNulgath = 5357
+    Tainted_Gem = 4769,
+    Dark_Crystal_Shard = 4770,
+    Diamond_of_Nulgath = 4771,
+    Gem_of_Nulgath = 6136,
+    Blood_Gem_of_the_Archfiend = 22332,
+    Totem_of_Nulgath = 5357,
+}
+
+public enum ContractExchangeRewards
+{
+    Tainted_Gem = 4769,
+    Dark_Crystal_Shard = 4770,
+    Diamond_of_Nulgath = 4771,
+    Gem_of_Nulgath = 6136,
+    Blood_Gem_of_the_Archfiend = 22332,
+    All = 0
 }
 
 public enum SwindlesReturnReward
@@ -1925,3 +2053,9 @@ public enum SwindlesReturnReward
     Blood_Gem_of_the_Archfiend = 22332,
     None = 0
 };
+
+public enum VoucherItemTotem
+{
+    Totem_of_Nulgath = 5357,
+    Gem_of_Nulgath = 6136
+}

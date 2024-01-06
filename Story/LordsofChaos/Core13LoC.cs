@@ -72,7 +72,7 @@ public class Core13LoC
         Story.MapItemQuest(179, "castleundead", 38, 5);
 
         //Defend the Throne
-        Story.KillQuest(180, "castleundead", "*");
+        Story.KillQuest(180, "castleundead", "Skeletal Viking");
 
         //The Arrival of Drakath cutscene
         if (!Bot.Quests.IsUnlocked(196))
@@ -1050,7 +1050,7 @@ public class Core13LoC
         if (!Story.QuestProgression(1234))
         {
             Core.EnsureAccept(1234);
-            Core.HuntMonster("bloodtusk", "Crystal-Rock", "Polished Rocks", 3);
+            Core.HuntMonsterMapID("bloodtusk", 21, "Polished Rocks", 3);
             Core.HuntMonster("crossroads", "Lemurphant", "Lemurphant Ivory", 5);
             Core.HuntMonster("crossroads", "Chinchilizard", "Liz-Leather Thongs", 5);
             Story.MapItemQuest(1234, "crossroads", 525);
@@ -1095,14 +1095,14 @@ public class Core13LoC
         Story.MapItemQuest(1281, "ravinetemple", new[] { 555, 556 }, 10);
 
         //Tears of the Mountain
-        Story.KillQuest(1282, "ravinetemple", "*");
+        Story.KillQuest(1282, "ravinetemple", "Temple Guardian");
 
         //Defend the UnderMountain
-        Story.KillQuest(1283, "ravinetemple", "*");
+        Story.KillQuest(1283, "ravinetemple", "Temple Guardian");
         Story.MapItemQuest(1283, "ravinetemple", 557, 10);
 
         //Alliance Defiance
-        Story.KillQuest(1284, "ravinetemple", "*");
+        Story.KillQuest(1284, "ravinetemple", "Temple Guardian");
 
         //Scout and Return
         Story.MapItemQuest(1375, "alliance", new[] { 679, 680 });
@@ -1197,12 +1197,10 @@ public class Core13LoC
         if (!Story.QuestProgression(1473))
         {
             Core.EnsureAccept(1473);
-            Adv.KillUltra("dreamnexus", "r17a", "Up", "Khasaanda", "Khasaanda Defeated!", publicRoom: false);
-            Bot.Events.CellChanged -= CutSceneFixer;
+            Core.KillMonster("dreamnexus", "r17a", "Up", "Khasaanda", "Khasaanda Defeated!", publicRoom: false);
             Core.EnsureComplete(1473);
             Bot.Wait.ForQuestComplete(1473);
         }
-
     }
 
     private void CutSceneFixer(string map, string cell, string pad)
@@ -1305,9 +1303,7 @@ public class Core13LoC
 
         //She Who asks 1
         if (!Story.QuestProgression(1230))
-        {
             Story.ChainQuest(1230);
-        }
 
         //The Troll Inside
         if (!Story.QuestProgression(1231))
@@ -1343,18 +1339,17 @@ public class Core13LoC
         Story.MapItemQuest(1275, "ravinetemple", new[] { 555, 556 }, 10);
 
         //Learn More of the Ore
-        Story.KillQuest(1276, "ravinetemple", "*");
+        Story.KillQuest(1276, "ravinetemple", "Temple Guardian");
 
         //Too Little, Too Late. Still Needed
-        Story.KillQuest(1277, "ravinetemple", "*");
+        Story.KillQuest(1277, "ravinetemple", "Temple Guardian");
         Story.MapItemQuest(1277, "ravinetemple", 557, 10);
 
         //Alliance Defiance
-        Story.KillQuest(1278, "ravinetemple", "*");
+        Story.KillQuest(1278, "ravinetemple", "Temple Guardian");
 
         //The Headquartes of Good and Evil
         Story.MapItemQuest(1369, "alliance", new[] { 679, 680 });
-
 
         //Treat Nullification, Good and Bad
         Story.KillQuest(1370, "alliance", new[] { "Good Soldier", "Evil Soldier" });
@@ -2355,8 +2350,25 @@ public class Core13LoC
         if (!Story.QuestProgression(3876))
         {
             Core.EnsureAccept(3876);
-            while (!Bot.ShouldExit && !Core.CheckInventory(26875))
-                Core.HuntMonsterMapID("finalbattle", 1);
+
+            while (Bot.Map.Name != "finalbattle")
+            {
+                Core.Join("finalbattle");
+                Core.Sleep();
+            }
+
+            while (Bot.Player.Cell != "r1")
+            {
+                Core.Jump("r1");
+                Core.Sleep();
+            }
+
+            while (!Bot.ShouldExit && Core.IsMonsterAlive(1, useMapID: true))
+            {
+                Bot.Combat.Attack(1);
+                if (Core.CheckInventory(26875))
+                    break;
+            }
             Core.EnsureComplete(3876);
         }
 
@@ -2364,8 +2376,26 @@ public class Core13LoC
         if (!Story.QuestProgression(3877))
         {
             Core.EnsureAccept(3877);
-            while (!Bot.ShouldExit && !Core.CheckInventory(26876))
-                Core.HuntMonsterMapID("finalbattle", 14);
+
+            while (Bot.Map.Name != "finalbattle")
+            {
+                Core.Join("finalbattle");
+                Core.Sleep();
+            }
+
+            while (Bot.Player.Cell != "r4")
+            {
+                Core.Jump("r4");
+                Core.Sleep();
+            }
+
+            while (!Bot.ShouldExit && Core.IsMonsterAlive(14, useMapID: true))
+            {
+                Bot.Combat.Attack(14);
+                if (Core.CheckInventory(26876))
+                    break;
+            }
+
             Core.EnsureComplete(3877);
         }
 
@@ -2373,8 +2403,20 @@ public class Core13LoC
         if (!Story.QuestProgression(3878))
         {
             Core.EnsureAccept(3878);
-            while (!Bot.ShouldExit && !Core.CheckInventory(26877))
-                Core.HuntMonsterMapID("finalbattle", 23);
+
+            if (Bot.Map.Name != "finalbattle")
+                Core.Join("finalbattle");
+
+            if (Bot.Player.Cell != "r9")
+                Core.Jump("r9");
+
+            while (!Bot.ShouldExit && Core.IsMonsterAlive(23, useMapID: true))
+            {
+                Bot.Combat.Attack(23);
+                if (Core.CheckInventory(26877))
+                    break;
+            }
+
             Core.EnsureComplete(3878);
             Bot.Wait.ForMapLoad("confrontation");
         }

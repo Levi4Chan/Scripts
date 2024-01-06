@@ -8,6 +8,7 @@ tags: null
 //cs_include Scripts/CoreAdvanced.cs
 using Skua.Core.Interfaces;
 using Skua.Core.Models.Items;
+using Skua.Core.Models.Shops;
 
 public class ExaltedApotheosisPreReqs
 {
@@ -18,9 +19,10 @@ public class ExaltedApotheosisPreReqs
 
     private string[] Weps =
     {
+        "Exalted Apotheosis",
         "Exalted Penultima", "Exalted Unity",
-        "Thaumaturgus Ultima", "Thaumaturgus Omega",
-        "Apostate Ultima", "Apostate Omega"
+        "Apostate Ultima", "Thaumaturgus Ultima",
+        "Apostate Omega", "Thaumaturgus Omega",
     };
 
     public void ScriptMain(IScriptInterface bot)
@@ -42,11 +44,8 @@ public class ExaltedApotheosisPreReqs
         // }
 
         /// No ultras required
-        if (!Core.CheckInventory("Thaumaturgus Alpha") && !Core.CheckInventory("Apostate Alpha"))
+        if (!Core.CheckInventory(new[] { "Thaumaturgus Alpha", "Apostate Alpha" }))
         {
-            if (Core.CheckInventory(Weps))
-                return;
-
             Core.EquipClass(ClassType.Farm);
             Core.KillMonster("timeinn", "r3", "Top", "Energy Elemental", "Exalted Node", 300, isTemp: false);
             Core.EquipClass(ClassType.Solo);
@@ -75,12 +74,58 @@ public class ExaltedApotheosisPreReqs
             "Currently our boats can't do the Ultra Bosses\n" +
             "for you until CoreArmy is finished.", stopBot: true);
         }
-        
         else
         {
-            /// Apotheosis merge once got insignias
-            Adv.BuyItem("timeinn", 2010, "Exalted Apotheosis");
-            Core.Logger("Congratulations on completing the Exalted Apotheosis weapon!");
+            //Ensure shop is loaded:
+            Core.Join("timeinn");
+            Bot.Shops.Load(2010);
+
+            ShopItem? ExaltedApo = Bot.Shops.Items.Find(x => x.Name == "Exalted Apotheosis");
+
+            while (!Bot.ShouldExit && !Core.CheckInventory(ExaltedApo!.ID))
+            {
+                // Define the weapon pairs in each tier
+                string[][] weaponPairs = new[]
+                {
+                    new[] { "Apostate Omega", "Thaumaturgus Omega" },
+                    new[] { "Apostate Ultima", "Thaumaturgus Ultima" },
+                    new[] { "Exalted Penultima", "Exalted Unity" }
+                };
+
+                foreach (string[] pair in weaponPairs)
+                {
+                    bool hasPairInInventory = pair.Any(wep => Bot.Inventory.Contains(wep));
+
+                    // Check if the pair is already in the inventory
+                    if (hasPairInInventory)
+                        continue;
+
+                    foreach (string wep in pair)
+                    {
+                        ShopItem? WepData = Bot.Shops.Items.Find(x => x.Name == wep);
+
+                        // Check if the weapon has any requirements before buying
+                        if (WepData?.Requirements == null || WepData.Requirements.All(req => Core.CheckInventory(req.ID)))
+                        {
+                            Core.KillMonster("timeinn", "r3", "Top", "Energy Elemental", "Exalted Node", 300, isTemp: false);
+                            Adv.BuyItem("timeinn", 2010, wep);
+
+                            if (Core.CheckInventory(ExaltedApo!.ID))
+                                break;
+                        }
+                    }
+                }
+                if (Core.CheckInventory(ExaltedApo!.ID))
+                    Core.Logger("Congratulations on completing the Exalted Apotheosis weapon!");
+                else
+                    foreach (var item in ExaltedApo.Requirements)
+                    {
+                        if (Core.CheckInventory(item.ID, toInv: false))
+                            continue;
+                        else Core.Logger($"Mising {item.Name}, {item.Quantity}");
+                    }
+            }
+            Bot.Wait.ForPickup(ExaltedApo!.ID);
         }
     }
 }

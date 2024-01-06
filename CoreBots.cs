@@ -1484,11 +1484,30 @@ public class CoreBots
         if (questID <= 0)
             return false;
 
+
+        var requiredItemNames = QuestData.AcceptRequirements
+        .Concat(QuestData.Requirements)
+        .Select(item => item?.Name)
+        .Where(name => !string.IsNullOrEmpty(name))
+        .ToArray();
+
+        foreach (var itemName in requiredItemNames)
+            if (itemName != null && !Bot.Inventory.Contains(itemName))
+                Unbank(itemName);
+
         if (QuestData.AcceptRequirements.Any())
-            AddDrop(QuestData.AcceptRequirements.Where(x => !x.Temp).Select(y => y.Name).ToArray());
+            foreach (ItemBase item in QuestData.AcceptRequirements)
+            {
+                if (!Bot.Drops.ToPickupIDs.Contains(item.ID))
+                    Bot.Drops.Add(item.ID);
+            }
 
         if (QuestData.Requirements.Any())
-            AddDrop(QuestData.Requirements.Where(x => !x.Temp).Select(y => y.Name).ToArray());
+            foreach (ItemBase item in QuestData.Requirements)
+            {
+                if (!Bot.Drops.ToPickupIDs.Contains(item.ID))
+                    Bot.Drops.Add(item.ID);
+            }
 
 
         Sleep(ActionDelay * 2);
@@ -1513,17 +1532,31 @@ public class CoreBots
             if (Bot.Quests.IsInProgress(quest.ID) || quest.ID <= 0)
                 continue;
 
-            if (quest.AcceptRequirements.Any())
-                AddDrop(quest.AcceptRequirements.Where(x => !x.Temp).Select(y => y.Name).ToArray());
+            var requiredItemNames = quest.AcceptRequirements
+                .Concat(quest.Requirements)
+                .Select(item => item?.Name)
+                .Where(name => !string.IsNullOrEmpty(name))
+                .ToArray();
 
-            if (quest.Requirements.Any())
-                AddDrop(quest.Requirements.Where(x => !x.Temp).Select(y => y.Name).ToArray());
+            foreach (var itemName in requiredItemNames)
+                if (itemName != null && !Bot.Inventory.Contains(itemName))
+                    Unbank(itemName);
+
+            foreach (ItemBase item in quest.AcceptRequirements)
+                if (!Bot.Drops.ToPickupIDs.Contains(item?.ID ?? 0))
+                    Bot.Drops.Add(item?.ID ?? 0);  // Adjusted to use 0 as the default value
+
+            foreach (ItemBase item in quest.Requirements)
+                if (!Bot.Drops.ToPickupIDs.Contains(item?.ID ?? 0))
+                    Bot.Drops.Add(item?.ID ?? 0);  // Adjusted to use 0 as the default value
 
             Sleep(ActionDelay * 2);
             // Bot.Send.Packet($"%xt%zm%acceptQuest%{Bot.Map.RoomID}%{quest.ID}%");
             Bot.Quests.EnsureAccept(quest.ID);
         }
     }
+
+
 
 
     /// <summary>
@@ -1745,7 +1778,7 @@ public class CoreBots
                 Gold = data.Gold,
                 XP = data.XP,
                 Status = null!, // Not found in QuestData
-                //Active is based on Status being NULL or not
+                                //Active is based on Status being NULL or not
                 AcceptRequirements = data.AcceptRequirements,
                 //Requirements cant be writen to
                 Rewards = data.Rewards,
@@ -1851,21 +1884,21 @@ public class CoreBots
         if (Bot.Player.CurrentClass?.Name == "ArchMage")
             Bot.Options.AttackWithoutTarget = true;
 
+        if (item == null && Bot.Options.AggroMonsters)
+            ToggleAggro(true);
+
         if (item == null)
         {
             if (log)
                 Logger($"Killing {monster}");
 
-            ToggleAggro(true);
-
             Bot.Kill.Monster(monster);
 
-            ToggleAggro(false);
             Rest();
         }
         else _KillForItem(monster, item, quant, isTemp, log: log);
         Bot.Options.AttackWithoutTarget = false;
-        // Bot.Skills.Stop();
+
     }
 
 
@@ -1906,11 +1939,13 @@ public class CoreBots
                 Logger($"Killing {monster}");
             ToggleAggro(true);
             Bot.Kill.Monster(monster);
-            ToggleAggro(false);
             Rest();
         }
         else _KillForItem(monster.Name, item, quant, isTemp, log: log);
         Bot.Options.AttackWithoutTarget = false;
+        ToggleAggro(false);
+        JumpWait();
+        Bot.Wait.ForCombatExit();
     }
 
     /// <summary>
@@ -2009,7 +2044,7 @@ public class CoreBots
             Sleep();
             Rest();
         }
-        
+
     }
 
     /// <summary>
@@ -2553,7 +2588,7 @@ public class CoreBots
         }
     }
 
-    public void FarmingLogger(string? item, int quant, [CallerMemberName] string caller = "")
+    public void FarmingLogger(string? item, int quant = 1, [CallerMemberName] string caller = "")
     {
         int quantity = string.IsNullOrEmpty(item) ? 0 : Bot.TempInv.GetQuantity(item) + Bot.Inventory.GetQuantity(item);
         Logger($"Farming {item} ({quantity}/{quant})", caller);
@@ -3377,6 +3412,8 @@ public class CoreBots
 
             #region Special Cases
             case "tercessuinotlim":
+                if (!isCompletedBefore(9540))
+                    SimpleQuestBypass((542, 1));
                 Bot.Map.Jump("m22", "Left");
                 tryJoin();
                 break;
@@ -3401,7 +3438,8 @@ public class CoreBots
 
             case "moonyard":
                 JumpWait();
-                Join("hyperium");
+                Bot.Send.Packet($"%xt%zm%serverUseItem%{Bot.Map.RoomID}%+%5041%525,275%{(PrivateRooms ? (map + "-" + PrivateRoomNumber) : map)}%");
+                Bot.Wait.ForMapLoad("hyperium");
                 Jump("R10");
                 Bot.Map.Join(PrivateRooms ? $"{map}-" + PrivateRoomNumber : strippedMap);
                 Bot.Wait.ForMapLoad(strippedMap);
@@ -3866,7 +3904,7 @@ public class CoreBots
     {
         JumpWait();
 
-        string[] classesToCheck = new[] { "TimeKeeper", "Void Highlord", "Void HighLord (IoDA)", "Yami no Ronin", "ArchPaladin" };
+        string[] classesToCheck = new[] { "TimeKeeper", "Chaos Avenger", "Void Highlord", "Void HighLord (IoDA)", "Yami no Ronin", "ArchPaladin" };
 
         foreach (string Class in classesToCheck)
         {
@@ -3877,6 +3915,10 @@ public class CoreBots
                         continue;
                     else
                         Bot.Skills.StartAdvanced(Class, true, ClassUseMode.Base);
+                    break;
+
+                case "Chaos Avenger":
+                    Bot.Skills.StartAdvanced(Class, true, ClassUseMode.Base);
                     break;
 
                 case "Void Highlord":
