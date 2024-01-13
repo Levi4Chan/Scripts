@@ -100,8 +100,12 @@ public class ArmyUniqueQuarry
         WaitCheck();
         AggroSetup(map);
 
-        foreach (string monster in monsters)
-            Army.SmartAggroMonStart(map, monsters);
+        if (monsters != null)
+        {
+            foreach (string monster in monsters)
+                if (map != null)
+                    Army.SmartAggroMonStart(map, monster);
+        }
 
         if (Bot.Player.CurrentClass?.Name == "ArchMage")
             Bot.Options.AttackWithoutTarget = true;
@@ -115,12 +119,29 @@ public class ArmyUniqueQuarry
 
         void WaitCheck()
         {
-            while (Bot.Map.PlayerCount < Bot.Config.Get<int>("armysize"))
+            if (Bot.Config != null)
             {
-                Core.Logger($"Waiting for the squad. [{Bot.Map.PlayerNames.Count}/{Bot.Config.Get<int>("armysize")}]");
-                Core.Sleep(5000);
+                int armySize = Bot.Config.Get<int>("armysize");
+                if (armySize == 0)
+                {
+                    throw new InvalidOperationException("Your army size is 0 somehow?");
+                }
+
+                while (Bot.Map.PlayerCount < armySize)
+                {
+                    var playerNames = Bot.Map.PlayerNames;
+                    if (playerNames != null)
+                    {
+                        Core.Logger($"Waiting for the squad. [{playerNames.Count}/{armySize}]");
+                    }
+                    Core.Sleep(5000);
+                }
+                var finalPlayerNames = Bot.Map.PlayerNames;
+                if (finalPlayerNames != null)
+                {
+                    Core.Logger($"Squad All Gathered [{finalPlayerNames.Count}/{armySize}]");
+                }
             }
-            Core.Logger($"Squad All Gathered [{Bot.Map.PlayerNames.Count}/{Bot.Config.Get<int>("armysize")}]");
         }
     }
 
@@ -131,7 +152,8 @@ public class ArmyUniqueQuarry
 
         if (Bot.Map.Name == "chaoswar")
         {
-            if (Bot.Config.Get<int>("armysize") <= 3)
+            int armySize = Bot.Config?.Get<int>("armysize") ?? default(int);
+            if (armySize <= 3)
             {
                 Army.AggroMonCells("r2");
                 Army.AggroMonStart("chaoswar");

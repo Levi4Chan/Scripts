@@ -36,7 +36,7 @@ public class ArmyEmblemOfNulgath
     };
 
     public void ScriptMain(IScriptInterface bot)
-    {       
+    {
         Core.BankingBlackList.AddRange(Loot);
 
         Core.SetOptions(disableClassSwap: true);
@@ -50,7 +50,7 @@ public class ArmyEmblemOfNulgath
     {
         Core.PrivateRooms = true;
         Core.PrivateRoomNumber = Army.getRoomNr();
-        
+
         Core.OneTimeMessage("Only for army", "This is intended for use with an army, not for solo players.");
 
         if (!Core.CheckInventory("Nation Round 4 Medal"))
@@ -63,9 +63,16 @@ public class ArmyEmblemOfNulgath
         Core.AddDrop(Loot);
         Core.RegisterQuests(4748);
 
-        if (string.IsNullOrEmpty(Bot.Config.Get<string>("player5").Trim()) && string.IsNullOrEmpty(Bot.Config.Get<string>("player6").Trim()))
-            Army.AggroMonCells("r13", "r14", "r15", "r16");
-        else Army.AggroMonCells("r13", "r14", "r15", "r16", "r17", "r4");
+        if (Bot.Config != null)
+        {
+            string player5 = Bot.Config.Get<string>("player5") ?? string.Empty;
+            string player6 = Bot.Config.Get<string>("player6") ?? string.Empty;
+
+            if (string.IsNullOrEmpty(player5.Trim()) && string.IsNullOrEmpty(player6.Trim()))
+                Army.AggroMonCells("r13", "r14", "r15", "r16");
+            else
+                Army.AggroMonCells("r13", "r14", "r15", "r16", "r17", "r4");
+        }
         Army.AggroMonStart("shadowblast");
         Army.DivideOnCells("r13", "r14", "r15", "r16", "r17", "r4");
 

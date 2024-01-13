@@ -177,7 +177,7 @@ public class CoreNation
             Core.KillEscherion("Escherion's Chain", publicRoom: true);
 
             Core.EquipClass(ClassType.Farm);
-            Core.KillMonster("tercessuinotlim", "m2", "Bottom", "Dark Makai", "Defeated Makai", 50, false, log: false);
+            Core.KillMonster("tercessuinotlim", "m2", "Left", "*", "Defeated Makai", 50, false, log: false);
             Core.JumpWait();
 
             Core.EquipClass(ClassType.Solo);
@@ -192,36 +192,78 @@ public class CoreNation
     /// </summary>
     /// <param name=item>Desired item to get</param>
     /// <param name="quant">Desired quantity to get</param>
-    public void NewWorldsNewOpportunities(string item = "Any", int quant = 1)
+    public void NewWorldsNewOpportunities(string? item = null, int quant = 1)
     {
-        if (Core.CheckInventory(item, quant) || (!Core.CheckInventory("Nulgath's Birthday Gift") && !Core.CheckInventory("Bounty Hunter's Drone Pet")))
+        if ((item != null && Core.CheckInventory(item, quant)) || (!Core.CheckInventory("Nulgath's Birthday Gift") && !Core.CheckInventory("Bounty Hunter's Drone Pet")))
             return;
 
-        if (item != "Any")
-        {
-            Core.AddDrop(item);
-            Core.FarmingLogger(item, quant);
-        }
-        Core.AddDrop(bagDrops);
+        Core.AddDrop(Core.QuestRewards(Core.CheckInventory("Bounty Hunter's Drone Pet") ? 6183 : 6697));
         Core.EquipClass(ClassType.Farm);
 
         Core.RegisterQuests(Core.CheckInventory("Bounty Hunter's Drone Pet") ? 6183 : 6697);
-        while (!Bot.ShouldExit && !Core.CheckInventory(item, quant) && !Bot.Inventory.IsMaxStack(item))
+        if (item == null)
         {
-            if (!Core.CheckInventory("Slugfit Horn", 5) || !Core.CheckInventory("Cyclops Horn", 3))
+            ItemBase[] QuestRewards = Core.EnsureLoad(Core.CheckInventory("Bounty Hunter's Drone Pet") ? 6183 : 6697).Rewards.ToArray();
+            foreach (var Item in QuestRewards)
             {
-                Core.JoinSWF("mobius", "ChiralValley/town-Mobius-21Feb14.swf");
-                Core.KillMonster("mobius", "Slugfit", "Bottom", "Slugfit", "Slugfit Horn", 5, log: false);
-                Core.KillMonster("mobius", "Slugfit", "Bottom", "Cyclops Warlord", "Cyclops Horn", 3, log: false);
+                Core.FarmingLogger(Item.Name, Item.MaxStack);
+
+                while (!Bot.ShouldExit && !Core.CheckInventory(Item.ID, Item.MaxStack))
+                {
+                    if (!Core.CheckInventory("Slugfit Horn", 5) || !Core.CheckInventory("Cyclops Horn", 3))
+                    {
+                        Core.JoinSWF("mobius", "ChiralValley/town-Mobius-21Feb14.swf", "Slugfit", "Bottom");
+
+                        foreach ((string, string, int) MobItemQuant in new[] { ("Slugfit", "Slugfit Horn", 5), ("Cyclops Warlord", "Cyclops Horn", 3) })
+                        {
+                            while (!Bot.ShouldExit && !Core.CheckInventory(MobItemQuant.Item2, MobItemQuant.Item3))
+                            {
+                                while (!Bot.ShouldExit && MobItemQuant.Item1 == "Slugfit" && Core.IsMonsterAlive(10, true))
+                                {
+                                    if (Core.IsMonsterAlive(10, true))
+                                        Bot.Combat.Attack(10);
+                                    else Bot.Combat.Attack(9);
+                                    Core.Sleep();
+                                    if (Bot.TempInv.Contains(MobItemQuant.Item2) && Bot.TempInv.GetQuantity(MobItemQuant.Item2) >= MobItemQuant.Item3)
+                                        continue;
+                                }
+                                while (!Bot.ShouldExit && MobItemQuant.Item1 == "Cyclops Warlord" && Core.IsMonsterAlive(9, true))
+                                {
+                                    if (Core.IsMonsterAlive(10, true))
+                                        Bot.Combat.Attack(9);
+                                    else Bot.Combat.Attack(10);
+                                    Core.Sleep();
+                                    if (Bot.TempInv.Contains(MobItemQuant.Item2) && Bot.TempInv.GetQuantity(MobItemQuant.Item2) >= MobItemQuant.Item3)
+                                        continue;
+                                }
+                            }
+
+                        }
+                    }
+                    Core.KillMonster("tercessuinotlim", "m2", "top", "*", "Makai Fang", 5, log: false);
+                    Core.KillMonster("hydra", "Rune2", "Left", "*", "Imp Flame", 3, log: false);
+                    Core.HuntMonster("greenguardwest", "Big Bad Boar", "Wereboar Tusk", 2, log: false);
+                }
             }
-            Core.KillMonster("tercessuinotlim", "m2", "Top", "Dark Makai", "Makai Fang", 5);
-            Core.KillMonster("hydra", "Rune2", "Left", "Fire Imp", "Imp Flame", 3, log: false);
-            Core.HuntMonster("greenguardwest", "Big Bad Boar", "Wereboar Tusk", 2, log: false);
+            Core.Logger("all items quant maxed");
+        }
+        else
+        {
+            Core.FarmingLogger(item, quant);
+            while (!Bot.ShouldExit && !Core.CheckInventory(item, quant) && !Bot.Inventory.IsMaxStack(item))
+            {
+                Core.KillMonster("tercessuinotlim", "m2", "top", "*", "Makai Fang", 5);
+                Core.KillMonster("hydra", "Rune2", "Left", "*", "Imp Flame", 3, log: false);
+                Core.HuntMonster("greenguardwest", "Big Bad Boar", "Wereboar Tusk", 2, log: false);
 
-            if (item != "Any")
-                Bot.Wait.ForPickup(item);
-
-            Core.Logger($"{item}: {Bot.Inventory.GetQuantity(item)}/{quant}");
+                if (!Core.CheckInventory("Slugfit Horn", 5) || !Core.CheckInventory("Cyclops Horn", 3))
+                {
+                    Core.JoinSWF("mobius", "ChiralValley/town-Mobius-21Feb14.swf");
+                    Core.KillMonster("mobius", "Slugfit", "Bottom", "Slugfit", "Slugfit Horn", 5, log: false);
+                    Core.KillMonster("mobius", "Slugfit", "Bottom", "Cyclops Warlord", "Cyclops Horn", 3, log: false);
+                }
+            }
+            Core.Logger("items quant maxed");
         }
         Core.CancelRegisteredQuests();
     }
@@ -317,6 +359,7 @@ public class CoreNation
             Supplies("Unidentified 16");
             Supplies("Unidentified 20");
             ResetSindles();
+            #region makai rune
             while (!Bot.ShouldExit && !Core.CheckInventory("Dark Makai Rune"))
             {
                 // Define the maps with their corresponding indexes
@@ -327,7 +370,6 @@ public class CoreNation
                 var selectedMap = maps[randomMapIndex];
 
                 Core.Join(selectedMap.Item1, selectedMap.Item2, "Left");
-
                 while (!Bot.ShouldExit &&
                     (selectedMap.Item1 == "tercessuinotlim"
                         ? (Core.IsMonsterAlive(2, useMapID: true) || Core.IsMonsterAlive(3, useMapID: true))
@@ -341,11 +383,13 @@ public class CoreNation
                 }
             }
             Bot.Wait.ForPickup("Dark Makai Rune");
+            #endregion makai rune
             Core.EnsureComplete(7551, Item.ID);
             if (Item.Name != "Voucher of Nulgath" && sellMemVoucher)
                 Core.SellItem("Voucher of Nulgath", all: true);
 
-            Core.Logger(Bot.Inventory.IsMaxStack(Item.Name) ? "Max Stack Hit." : $"{Item.Name}: {Bot.Inventory.GetQuantity(Item.Name)}/{quant}");
+            Core.FarmingLogger(Item.Name, quant);
+
         }
     }
 
@@ -408,26 +452,27 @@ public class CoreNation
         if (item != null)
         {
             ItemBase? Reward = Bot.Quests.EnsureLoad(870)?.Rewards.Find(x => x.Name == item);
-            Core.FarmingLogger(Reward.Name, quant > 1 ? quant : Reward.MaxStack);
-            while (!Bot.ShouldExit && !Core.CheckInventory(Reward.Name, quant > 1 ? quant : Reward.MaxStack))
+            string rewardName = Reward?.Name ?? string.Empty;
+            Core.FarmingLogger(rewardName, quant > 1 ? quant : Reward?.MaxStack ?? default(int));
+            while (!Bot.ShouldExit && !Core.CheckInventory(rewardName, quant > 1 ? quant : Reward?.MaxStack ?? default(int)))
             {
-                switch (Reward.Name)
+                switch (rewardName)
                 {
                     case "Tainted Gem":
                         Supplies("Diamond of Nulgath", 45);
-                        ContractExchange(ContractExchangeRewards.Tainted_Gem, quant > 1 ? quant : Reward.MaxStack);
+                        ContractExchange(ContractExchangeRewards.Tainted_Gem, quant > 1 ? quant : Reward?.MaxStack ?? default(int));
                         break;
                     case "Dark Crystal Shard":
                         Supplies("Diamond of Nulgath", 45);
-                        ContractExchange(ContractExchangeRewards.Dark_Crystal_Shard, quant > 1 ? quant : Reward.MaxStack);
+                        ContractExchange(ContractExchangeRewards.Dark_Crystal_Shard, quant > 1 ? quant : Reward?.MaxStack ?? default(int));
                         break;
                     case "Gem of Nulgath":
                         Supplies("Diamond of Nulgath", 45);
-                        ContractExchange(ContractExchangeRewards.Gem_of_Nulgath, quant > 1 ? quant : Reward.MaxStack);
+                        ContractExchange(ContractExchangeRewards.Gem_of_Nulgath, quant > 1 ? quant : Reward?.MaxStack ?? default(int));
                         break;
                     case "Blood Gem of the Archfiend":
                         Supplies("Diamond of Nulgath", 45);
-                        ContractExchange(ContractExchangeRewards.Blood_Gem_of_the_Archfiend, quant > 1 ? quant : Reward.MaxStack);
+                        ContractExchange(ContractExchangeRewards.Blood_Gem_of_the_Archfiend, quant > 1 ? quant : Reward?.MaxStack ?? default(int));
                         break;
                 }
             }
@@ -578,7 +623,7 @@ public class CoreNation
 
         Core.AddDrop("Essence of Nulgath");
         Core.EquipClass(ClassType.Farm);
-        Core.KillMonster("tercessuinotlim", "m2", "Bottom", "Dark Makai", "Essence of Nulgath", quant, false);
+        Core.KillMonster("tercessuinotlim", "m2", "Left", "*", "Essence of Nulgath", quant, false);
         Core.JumpWait();
     }
 
@@ -778,7 +823,7 @@ public class CoreNation
                 // Continue farming until the desired item quantity is obtained
                 while (!Bot.ShouldExit && !Core.CheckInventory(Item.Name, Item.MaxStack))
                 {
-                    LogItemQuant2(Item, Item.MaxStack);
+                    LogMobItemQuant2(Item, Item.MaxStack);
                     if (farmGold)
                         Farm.Gold(1000000);
 
@@ -836,7 +881,7 @@ public class CoreNation
             // Continue farming the specified item until the desired quantity is obtained
             while (!Bot.ShouldExit && !Core.CheckInventory(item, quant))
             {
-                LogItemQuant(item, quant);
+                LogMobItemQuant(item, quant);
                 if (farmGold)
                     Farm.Gold(1000000);
 
@@ -905,7 +950,7 @@ public class CoreNation
     /// </summary>
     /// <param name="item">Item name</param>
     /// <param name="quant">Desired item quantity</param>
-    void LogItemQuant(string item, int quant)
+    void LogMobItemQuant(string item, int quant)
     {
         // Check if the specified item is in inventory
         if (!Core.CheckInventory(item))
@@ -936,7 +981,7 @@ public class CoreNation
     /// </summary>
     /// <param name="item">Item object</param>
     /// <param name="quant">Desired item quantity</param>
-    void LogItemQuant2(ItemBase item, int maxStack)
+    void LogMobItemQuant2(ItemBase item, int maxStack)
     {
         // Check if the specified item is in inventory
         if (!Core.CheckInventory(item.Name))
@@ -1197,7 +1242,7 @@ public class CoreNation
 
             // Equip the Farm class and hunt monsters for quest completion
             Core.EquipClass(ClassType.Farm);
-            Core.KillMonster("tercessuinotlim", "m2", "Top", "Dark Makai", "Makai Fang", 5);
+            Core.KillMonster("tercessuinotlim", "m2", "Left", "*", "Makai Fang", 5);
             Core.HuntMonster("hydra", "Fire Imp", "Imp Flame", 3);
             Core.HuntMonster("battleunderc", "Crystalized Jellyfish", "Aquamarine of Nulgath", 3, false);
 
@@ -1512,8 +1557,8 @@ public class CoreNation
     /// <param name="relic">Indicates if Relic of Chaos supplies are used.</param>
     public void BloodyChaos(int quant = 100, bool relic = false)
     {
-        // Check if Blood Gem Of The Archfiend is already in inventory or player level is below 80
-        if (Core.CheckInventory("Blood Gem Of The Archfiend", quant) || Bot.Player.Level < 80)
+        // Check if Blood Gem of the Archfiend is already in inventory or player level is below 80
+        if (Core.CheckInventory("Blood Gem of the Archfiend", quant) || Bot.Player.Level < 80)
             return;
 
         // Add drops for the quest
@@ -1521,14 +1566,14 @@ public class CoreNation
         if (relic)
             Core.AddDrop(BloodyChaosSupplies);
 
-        // Log the farming for Blood Gem Of The Archfiend
-        Core.FarmingLogger("Blood Gem Of The Archfiend", quant);
+        // Log the farming for Blood Gem of the Archfiend
+        Core.FarmingLogger("Blood Gem of the Archfiend", quant);
 
         // Register the quest depending on whether Relic of Chaos supplies are used
         Core.RegisterQuests(relic ? new[] { 7816, 2857 } : new[] { 7816 });
 
         // Continue farming until the desired quantity is reached
-        while (!Bot.ShouldExit && !Core.CheckInventory("Blood Gem Of The Archfiend", quant))
+        while (!Bot.ShouldExit && !Core.CheckInventory("Blood Gem of the Archfiend", quant))
         {
             // Equip Solo class and kill Escherion
             Core.EquipClass(ClassType.Solo);
@@ -1568,7 +1613,7 @@ public class CoreNation
 
             if (!Core.CheckInventory("Tendurrr The Assistant"))
             {
-                Core.KillMonster("tercessuinotlim", "m2", "Bottom", "Dark Makai", "Tendurrr The Assistant", isTemp: false, log: false);
+                Core.KillMonster("tercessuinotlim", "m2", "Left", "*", "Tendurrr The Assistant", isTemp: false, log: false);
                 Core.JumpWait();
             }
 

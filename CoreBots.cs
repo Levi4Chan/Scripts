@@ -616,6 +616,8 @@ public class CoreBots
         if (items == null || items.Length == 0)
             return;
 
+        // (string, string) CellandPadBefore = ($"{Bot.Player.Cell}", $"{Bot.Player.Pad}");
+
         JumpWait();
 
         if (Bot.Flash.GetGameObject("ui.mcPopup.currentLabel") != "\"Bank\"")
@@ -637,6 +639,12 @@ public class CoreBots
                 Logger($"{item} moved from bank");
             }
         }
+
+        // while (!Bot.ShouldExit && Bot.Player.Cell != CellandPadBefore.Item1)
+        // {
+        //     Jump(CellandPadBefore.Item1, CellandPadBefore.Item2);
+        //     Sleep();
+        // }
     }
 
     /// <summary>
@@ -684,15 +692,18 @@ public class CoreBots
 
         if (Bot.Flash.GetGameObject("ui.mcPopup.currentLabel") != "\"Bank\"")
             Bot.Bank.Open();
+
         foreach (string? item in items)
         {
             if (item == null || item == SoloClass || item == FarmClass)
                 continue;
+
             if (Bot.Inventory.IsEquipped(item))
             {
                 Logger("Can't bank an equipped item");
                 continue;
             }
+
             if (Bot.Inventory.Contains(item))
             {
                 if (!Bot.Inventory.EnsureToBank(item))
@@ -1280,10 +1291,18 @@ public class CoreBots
     /// <param name="items">Items to Trash/Bank</param>
     public void TrashCan(params string[] items)
     {
-        JumpWait();
+        while (Bot.ShouldExit && (Bot.Player.InCombat || Bot.Player.HasTarget))
+        {
+            Bot.Combat.CancelTarget();
+            Bot.Combat.Exit();
+            Bot.Wait.ForCombatExit();
+            JumpWait();
+            Sleep();
+        }
+
         foreach (string item in items)
         {
-            if (!Bot.Inventory.TryGetItem(item, out var TrashItem) || TrashItem == null)
+            if (!Bot.Inventory.TryGetItem(item, out var TrashItem) || TrashItem == null || TrashItem.Temp)
                 continue;
 
             if (!TrashItem.Coins)
@@ -1292,7 +1311,7 @@ public class CoreBots
                 Sleep();
                 Logger($"Trashed: {TrashItem.Name} x{TrashItem.Quantity}");
             }
-            else ToBank(item);
+            else ToBank(TrashItem.ID);
         }
     }
 
@@ -1543,12 +1562,22 @@ public class CoreBots
                     Unbank(itemName);
 
             foreach (ItemBase item in quest.AcceptRequirements)
-                if (!Bot.Drops.ToPickupIDs.Contains(item?.ID ?? 0))
+            {
+                if (item == null)
+                    continue;
+
+                if (!Bot.Drops.ToPickupIDs.Contains(item?.ID ?? 0) && item?.Name != null)
                     Bot.Drops.Add(item?.ID ?? 0);  // Adjusted to use 0 as the default value
+            }
 
             foreach (ItemBase item in quest.Requirements)
-                if (!Bot.Drops.ToPickupIDs.Contains(item?.ID ?? 0))
+            {
+                if (item == null)
+                    continue;
+
+                if (!Bot.Drops.ToPickupIDs.Contains(item?.ID ?? 0) && item?.Name != null)
                     Bot.Drops.Add(item?.ID ?? 0);  // Adjusted to use 0 as the default value
+            }
 
             Sleep(ActionDelay * 2);
             // Bot.Send.Packet($"%xt%zm%acceptQuest%{Bot.Map.RoomID}%{quest.ID}%");
@@ -1884,22 +1913,40 @@ public class CoreBots
         if (Bot.Player.CurrentClass?.Name == "ArchMage")
             Bot.Options.AttackWithoutTarget = true;
 
-        if (item == null && Bot.Options.AggroMonsters)
-            ToggleAggro(true);
+        // if (Bot.Options.AggroMonsters)
+        //     ToggleAggro(true);
 
         if (item == null)
         {
+
             if (log)
                 Logger($"Killing {monster}");
 
-            Bot.Kill.Monster(monster);
+            while (!Bot.ShouldExit && Bot.Player.Cell != cell)
+            {
+                Jump(cell, pad);
+                Sleep();
+            }
 
-            Rest();
+            Monster? targetedMob = monster == "*"
+                ? Bot.Monsters.CurrentAvailableMonsters.Find(x => IsMonsterAlive(x.MapID, true))
+                : Bot.Monsters.CurrentAvailableMonsters.Find(x => x.Name == monster && IsMonsterAlive(x.MapID, true));
+
+            if (targetedMob != null)
+            {
+                Bot.Kill.Monster(targetedMob.MapID);
+            }
         }
-        else _KillForItem(monster, item, quant, isTemp, log: log);
-        Bot.Options.AttackWithoutTarget = false;
+        else
+        {
+            _KillForItem(monster, item, quant, isTemp, log: log);
+        }
 
+        Rest();
+        // ToggleAggro(false);
+        Bot.Options.AttackWithoutTarget = false;
     }
+
 
 
     /// <summary>
@@ -1943,9 +1990,6 @@ public class CoreBots
         }
         else _KillForItem(monster.Name, item, quant, isTemp, log: log);
         Bot.Options.AttackWithoutTarget = false;
-        ToggleAggro(false);
-        JumpWait();
-        Bot.Wait.ForCombatExit();
     }
 
     /// <summary>
@@ -1990,6 +2034,7 @@ public class CoreBots
                 Sleep();
                 Rest();
             }
+
         }
         Bot.Options.AttackWithoutTarget = false;
     }
@@ -2405,7 +2450,6 @@ public class CoreBots
                 }
                 else
                 {
-
                     if (Bot.Player.CurrentClass!.Name == "ArchMage")
                         Bot.Options.AttackWithoutTarget = true;
 
@@ -2428,23 +2472,58 @@ public class CoreBots
 
     public void _KillForItem(string name, string item, int quantity, bool isTemp = false, bool rejectElse = false, bool log = true)
     {
+        var (Cell, Pad) = (Bot.Player.Cell, "Left");
+
+        if (CheckInventory(item, quantity))
+            return;
+
         if (log)
             FarmingLogger(item, quantity);
-        ToggleAggro(true);
 
-        while (!Bot.ShouldExit && !CheckInventory(item, quantity))
+        ToggleAggro(Bot.Options.AggroMonsters);
+
+        while (!Bot.ShouldExit &&
+       ((!Bot.Inventory.Contains(item) && Bot.Inventory.GetQuantity(item) < quantity) ||
+        (!Bot.TempInv.Contains(item) && Bot.TempInv.GetQuantity(item) < quantity)))
         {
-            if (!Bot.Combat.StopAttacking)
-                Bot.Combat.Attack(name);
+            while (!Bot.ShouldExit && Bot.Player.Cell != Cell)
+            {
+                Jump(Cell, Pad);
+                Sleep();
+                if (Bot.Player.Cell == Cell)
+                    break;
+            }
+
+            foreach (Monster mob in Bot.Monsters.CurrentAvailableMonsters)
+            {
+                Monster? targetedMob = (name == "*") ? mob : Bot.Monsters.CurrentAvailableMonsters.FirstOrDefault(x => x.Name == name);
+
+                while (!Bot.ShouldExit && IsMonsterAlive(targetedMob?.MapID ?? 0, true))
+                {
+                    Bot.Combat.Attack(targetedMob?.MapID ?? Bot.Monsters.CurrentAvailableMonsters.FirstOrDefault()?.MapID ?? 0);
+
+                    if ((Bot.Inventory.Contains(item) && Bot.Inventory.GetQuantity(item) >= quantity) ||
+                        (Bot.TempInv.Contains(item) && Bot.TempInv.GetQuantity(item) >= quantity))
+                    {
+                        return;
+                    }
+                }
+            }
+
             Sleep();
+
             if (rejectElse)
                 Bot.Drops.RejectExcept(item);
         }
+
         ToggleAggro(false);
-        JumpWait();
+        Bot.Combat.CancelTarget();
+        Bot.Combat.Exit();
         Bot.Wait.ForCombatExit();
         Rest();
     }
+
+
 
     public bool IsMonsterAlive(Monster? mon)
         => mon != null && (mon.Alive || !KilledMonsters.Contains(mon.MapID));
@@ -3181,6 +3260,15 @@ public class CoreBots
         if (Bot.Map.Name != null && Bot.Map.Name.ToLower() == strippedMap && !ignoreCheck)
             return;
 
+        //if aggro/aggroall is  enable when joining a map, disable it
+        bool pauseAggro = Bot.Options.AggroMonsters || Bot.Options.AggroAllMonsters;
+        if (pauseAggro)
+        {
+            ToggleAggro(false);
+            JumpWait();
+            Bot.Wait.ForCombatExit();
+        }
+
         Sleep();
 
         switch (strippedMap)
@@ -3413,9 +3501,25 @@ public class CoreBots
             #region Special Cases
             case "tercessuinotlim":
                 if (!isCompletedBefore(9540))
-                    SimpleQuestBypass((542, 1));
-                Bot.Map.Jump("m22", "Left");
+                {
+                    Logger("This map now requires a 1 time completion of \"Beyond the Portal\"");
+                    EnsureAccept(9540);
+                    KillMonster("citadel", "m22", "Left", "Death's Head", "Death's Head Bested");
+                    EnsureComplete(9540);
+                }
+                // SimpleQuestBypass((542, 1));
+                Jump("m22", "Left");
                 tryJoin();
+
+                // Following the recent update,
+                // even with the execution of an "updatequest," a black screen
+                // is encountered upon the initial `tryJoin`
+                // (also may be caused by the thing auto-fixes te cell on join 
+                // [client function.. nothing i can do about that] so had todo below). 
+                Jump("Enter", "Left");
+                Jump(cell, pad);
+
+
                 break;
 
             case "doomvaultb":
@@ -3645,6 +3749,7 @@ public class CoreBots
         {
             foreach ((int, int) sV in slotValues)
                 Bot.Quests.UpdateQuest(sV.Item2, sV.Item1);
+            Sleep();
             tryJoin();
         }
 
@@ -3658,6 +3763,7 @@ public class CoreBots
         {
             if (!CheckInventory(ID))
                 GhostItem(ID, name);
+            Sleep();
             tryJoin();
         }
     }
@@ -3979,8 +4085,59 @@ public class CoreBots
         }
     }
 
+    public void DodgeClass(string? additionalClass = null)
+    {
+        JumpWait();
+
+        string[] classesToCheck = new[] { "Yami no Ronin", "Chrono Assassin" };
+
+        foreach (string Class in classesToCheck)
+        {
+            switch (Class)
+            {
+                case "Yami no Ronin":
+                    Bot.Skills.StartAdvanced(Class, true, ClassUseMode.Solo);
+                    break;
+
+                case "Chrono Assassin":
+                    Bot.Skills.StartAdvanced(Class, true, ClassUseMode.Base);
+                    break;
+            }
+
+            if (!CheckInventory(Class))
+                Logger($"{Class} Not Found, skipping");
+            else
+            {
+                Bot.Wait.ForItemEquip(CheckInventory(Class) ? Class : SoloClass);
+                Logger($"Using {Bot.Player.CurrentClass?.Name}");
+                break;
+            }
+        }
 
 
+        if (!string.IsNullOrEmpty(additionalClass))
+        {
+            Unbank(additionalClass);
+
+            switch (additionalClass)
+            {
+                case "AnotherClass":
+                    Equip(additionalClass);
+                    Bot.Wait.ForItemEquip(additionalClass);
+                    // Perform actions for the additional class "AnotherClass"
+                    break;
+
+                default:
+                    Logger($"Using {additionalClass}");
+                    Unbank(SoloClass);
+                    EquipClass(ClassType.Solo);
+                    Bot.Wait.ForItemEquip(SoloClass);
+                    break;
+            }
+            Bot.Wait.ForItemEquip(CheckInventory(additionalClass) ? additionalClass : SoloClass);
+            Logger($"Using {Bot.Player.CurrentClass!.Name}");
+        }
+    }
 
 
 
@@ -4409,10 +4566,10 @@ public class CoreBots
             var content = new FormUrlEncodedContent(bodyValues);
 
             // Post the request
-            // https://docs.google.com/forms/u/0/d/e/1FAIpQLSe7nkDQSKL55-g1MQQ-31jqbpVh8g65jMEJCMw7wbdjQugbVg/formResponse
+            // https://docs.google.com/forms/u/0/d/e/1FAIpQLSdB0U9QsYacXTYItiN0Ovvf4aV1md8t_SiK7VbT49QPcecEtA/formResponse
             WebClient.PostAsync(
                 "https://docs.google.com/forms/d/e/" +
-                "1FAIpQLSe7nkDQSKL55-g1MQQ-31jqbpVh8g65jMEJCMw7wbdjQugbVg" +
+                "1FAIpQLSdB0U9QsYacXTYItiN0Ovvf4aV1md8t_SiK7VbT49QPcecEtA" +
                 "/formResponse",
                 content);
 

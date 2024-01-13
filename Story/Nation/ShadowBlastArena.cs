@@ -54,7 +54,7 @@ public class ShadowBlastArena
 
                 case 4734: // Show Me More, Shadow-Noob 4734
                     Core.HuntMonster("shadowblast", "Legion Fenrir", "Legion Veteran Defeated", 7);
-                    Core.HuntMonster("shadowblast", "Carnage", "Naation Veteran Defeated", 7);
+                    Core.HuntMonster("shadowblast", "Carnage", "Nation Veteran Defeated", 7);
                     break;
 
                 case 4735: // For the Shadowscythe! 4735
@@ -63,7 +63,7 @@ public class ShadowBlastArena
                     break;
 
                 case 4736: // ravelyn Likes Your Style 4736
-                    Core.HuntMonster("shadowblast", "Shadow Destroyer", "Shadow Destroyer Vanquished");
+                    Core.HuntMonster("shadowblast", "Shadowscythe Destroyer", "Shadowscythe Destroyer Vanquished");
                     break;
             }
         }
@@ -95,7 +95,7 @@ public class ShadowBlastArena
             if (!Core.CheckInventory("Defeated Makai", 25))
             {
                 Core.EquipClass(ClassType.Farm);
-                Core.KillMonster("tercessuinotlim", "m2", "Bottom", "Dark Makai", "Defeated Makai", 25, false);
+                Core.KillMonster("tercessuinotlim", "m2", "Left", "*", "Defeated Makai", 25, false);
                 Core.JumpWait();
                 Core.Join("aqlesson");
             }

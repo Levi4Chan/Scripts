@@ -106,13 +106,12 @@ public class CoreSDKA
 
     public void UnlockHardCoreMetals()
     {
-        if (!Core.IsMember)
-            return;
-        if (Core.isCompletedBefore(2098))
+        if (!Core.IsMember || Core.isCompletedBefore(2098))
         {
-            Core.Logger("Hard Core Metals already unlocked, skipping.");
+            Core.Logger(message: !Core.IsMember ? "Not a member, skipping." : "Hard Core Metals already unlocked, skipping.");
             return;
         }
+
 
         Core.AddDrop("Dark Energy", "Dark Spirit Orb", "DoomKnight Hood",
                      "Experimental Dark Item", "Shadow Terror Axe", "Elders' Blood",
@@ -169,7 +168,7 @@ public class CoreSDKA
         if (!Core.isCompletedBefore(2090))
         {
             Core.Logger("Quest: A Penny for your Foughts [2089]");
-            Penny(oneTime: true);
+            Penny(1, true);
         }
 
         if (!Core.isCompletedBefore(2098))
@@ -226,7 +225,7 @@ public class CoreSDKA
                 }
 
             if (oneTime)
-                break;
+                return;
         }
         Core.CancelRegisteredQuests();
         Bot.Wait.ForPickup("Dark Spirit Orb");
@@ -626,7 +625,7 @@ public class CoreSDKA
 
             while (!Bot.ShouldExit && !Core.CheckInventory(items[i], quants[i]))
             {
-                Core.KillMonster("lycan", "r4", "Left", "Chaos Vampire Knight", "DoomKnight Armor Piece", 10, log: false);
+                Core.KillMonster("lycan", "r4", "Left", "*", "DoomKnight Armor Piece", 10, log: false);
                 Bot.Wait.ForPickup(items[i]);
             }
         }
