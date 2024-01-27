@@ -303,7 +303,7 @@ public class CoreSDKA
             Core.EquipClass(ClassType.Farm);
             Core.KillMonster("lycan", "r4", "Left", "Chaos Vampire Knight", "Silver Brush", log: false);
             Core.KillMonster("sandport", "r3", "Right", "Tomb Robber", "Leather Case", log: false);
-            Core.KillMonster("pines", "Path1", "Left", "Leatherwing", "Leatherwing Hide", 10, log: false);
+            Core.KillMonster("pines", "Path1", "Left", "LeatherWing", "LeatherWing Hide", 10, log: false);
 
             Bot.Wait.ForPickup("DoomSoldier Weapon Kit");
         }
@@ -615,17 +615,17 @@ public class CoreSDKA
 
         Core.AddDrop("Dark Energy", "Dark Spirit Orb", "Corrupt Spirit Orb", "Ominous Aura", "Diabolical Aura", "Doom Aura");
 
-        Core.RegisterQuests(quest);
         Core.EquipClass(ClassType.Farm);
 
         // Process each item individually
         for (int i = 0; i < items.Length; i++)
         {
             Core.FarmingLogger(items[i], quants[i]);
-
             while (!Bot.ShouldExit && !Core.CheckInventory(items[i], quants[i]))
             {
+                Core.EnsureAccept(quest);
                 Core.KillMonster("lycan", "r4", "Left", "*", "DoomKnight Armor Piece", 10, log: false);
+                Core.EnsureComplete(quest);
                 Bot.Wait.ForPickup(items[i]);
             }
         }

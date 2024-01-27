@@ -48,7 +48,9 @@ tags: story, quest, complete, all
 //cs_include Scripts/Story/Nation/Fiendshard.cs
 //cs_include Scripts/Story/Nation/FiendPast.cs
 //cs_include Scripts/Story/Nation/Originul.cs
+//cs_include Scripts/Story/Nation/ShadowBlastArena.cs
 //cs_include Scripts/Story/Nation/Tercessuinotlim.cs
+//cs_include Scripts/Story/Nation/VoidRefuge.cs
 
 //cs_include Scripts/Story/QueenofMonsters/CoreQoM.cs
 //cs_include Scripts/Story/QueenofMonsters/Extra/BrightOak.cs
@@ -128,6 +130,7 @@ tags: story, quest, complete, all
 //cs_include Scripts/Story/Lair.cs
 //cs_include Scripts/Story/Lightguard[MEM].cs
 //cs_include Scripts/Story/LightoviaCave.cs
+//cs_include Scripts/Story/LostVilla.cs
 
 //cs_include Scripts/Story/Manor.cs
 //cs_include Scripts/Story/Marsh2[MEM].cs
@@ -240,8 +243,9 @@ public class AllStories
     public FiendPast FiendPast = new();
     public Fiendshard_Story Fiendshard_Story = new();
     public Originul_Story Originul_Story = new();
-
+    public ShadowBlastArena ShadowBlastArena = new();
     public Tercessuinotlim Tercessuinotlim = new();
+    public VoidRefuge VoidRefuge = new();
 
     // Queen of Monsters
     public CoreQOM QOM => new();
@@ -331,6 +335,7 @@ public class AllStories
     public Lair Lair = new();
     public Lightguard Lightguard = new();
     public LightoviaCave LightoviaCave = new();
+    public LostVilla LostVilla = new();
 
     public Manor Manor = new();
     public Marsh2 Marsh2 = new();
@@ -494,14 +499,23 @@ public class AllStories
         CitadelRuins.DoAll();
         Core.Logger($"Story: Citadel Ruins - Complete");
 
-        Fiendshard_Story.Fiendshard_Questline();
+        Fiendshard_Story.Fiendshard_QuestlineP1();
         Core.Logger($"Story: Fiendshard - Complete");
 
         FiendPast.DoAll();
         Core.Logger($"Story: Fiend Past - Complete");
 
+        Originul_Story.Originul_Questline();
+        Core.Logger($"Story: Originul - Complete");
+
+        ShadowBlastArena.Doall();
+        Core.Logger($"Story: ShadowBlast Arena - Complete");
+
         Tercessuinotlim.JadziaQuests();
         Core.Logger($"Story: Tercessuinotlim - Complete");
+
+        VoidRefuge.Storyline();
+        Core.Logger($"Story: Void Refuge - Complete");
         #endregion
 
         #region QoM
@@ -745,6 +759,9 @@ public class AllStories
 
         LightoviaCave.LightoviaCaveQuests();
         Core.Logger($"Story: LightoviaCave - Complete");
+
+        LostVilla.Storyline();
+        Core.Logger($"Story: Lost Villa - Complete");
 
 
         Manor.StoryLine();
