@@ -118,7 +118,7 @@ public class CoreFarms
 
         ToggleBoost(BoostType.Gold);
 
-        // HonorHall(quant);
+        HonorHall(quant);
         BattleGroundE(quant);
         BerserkerBunny(quant);
 
@@ -164,8 +164,8 @@ public class CoreFarms
         Core.RegisterQuests(3991, 3992);
         while (!Bot.ShouldExit && Bot.Player.Gold < goldQuant)
         {
-            Core.KillMonster("battlegrounde", "r2", "Left", "*", "Battleground E Opponent Defeated", 10);
-            Core.KillMonster("battlegrounde", "r2", "Left", "*", "Battleground D Opponent Defeated", 10);
+            Core.KillMonster("battlegrounde", "r2", "Left", "*", "Battleground E Opponent Defeated", 10, log: false);
+            Core.KillMonster("battlegrounde", "r2", "Left", "*", "Battleground D Opponent Defeated", 10, log: false);
         }
         Core.CancelRegisteredQuests();
         Core.SavedState(false);
@@ -244,6 +244,7 @@ public class CoreFarms
         if (Bot.Player.Level < 30)
         {
             //i swear this is active yearround for a black friday "locked" quest according to the wiki.. keep undead warrior as a backup.. undead giant is slower but will work till we find a fillin - perhaps sluethhouseinn? used to be good years ago
+            //piggydrake quest
             if (Bot.Quests.IsAvailable(6979))
             {
                 Core.EquipClass(ClassType.Solo);
@@ -313,6 +314,8 @@ public class CoreFarms
             ToggleBoost(BoostType.Class);
         Core.ToggleAggro(true);
         Core.SavedState();
+        if (NotYetLevel(level) && Bot.Player.Level < 100)
+            ToggleBoost(BoostType.Experience, true);
 
         //Between level 1 and 5
         while (NotYetLevel(5))
@@ -378,6 +381,7 @@ public class CoreFarms
 
         if (rankUpClass)
             ToggleBoost(BoostType.Class, false);
+        ToggleBoost(BoostType.Experience, false);
 
         bool NotYetLevel(int _level)
         {
@@ -518,6 +522,9 @@ public class CoreFarms
         if (Core.CheckInventory(item, quant))
             return;
 
+        int ExitAttempt = 1;
+        int Death = 1;
+
         Core.Logger("Kill ads is on by default now\n" +
         "as you get rewarded 10 rather then 3\n" +
         "Combat Trophies");
@@ -526,15 +533,15 @@ public class CoreFarms
         // if (Core.CBOBool("PvP_SoloPvPBoss", out bool _canSoloBoss))
         //     canSoloBoss = !_canSoloBoss;
 
-        Core.AddDrop(item);
-        Bot.Drops.Add("The Secret 4", "Yoshino's Citrine");
+        Core.AddDrop(item, "The Secret 4", "Yoshino's Citrine");
 
         Core.EquipClass(ClassType.Solo);
         Core.FarmingLogger(item, quant);
         // Core.Logger($"Farming {quant} {item}. SoloBoss = {canSoloBoss}");
         Core.ConfigureAggro(false);
 
-        // Bot.Events.PlayerDeath += PVPDeath;
+    // Bot.Events.PlayerDeath += PVPDeath;
+    Start:
         Core.EquipClass(ClassType.Solo);
         while (!Bot.ShouldExit && !Core.CheckInventory(item, quant))
         {
@@ -542,14 +549,24 @@ public class CoreFarms
             Core.Sleep(2500);
 
             Core.PvPMove(5, "Morale0C");
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(4, "Morale0B");
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(7, "Morale0A");
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(9, "Crosslower");
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
 
-            // if (!canSoloBoss)
-            // {
             Core.PvPMove(14, "Crossupper", 528, 255);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(18, "Resource1A");
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
 
             while (!Bot.ShouldExit)
             {
@@ -564,9 +581,15 @@ public class CoreFarms
                     Core.Logger("(B) Defensive Restorers killed, moving on.");
                     break;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
 
             Core.PvPMove(20, "Resource1B");
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
 
             while (!Bot.ShouldExit)
             {
@@ -581,16 +604,25 @@ public class CoreFarms
                     Core.Logger("(B) Defensive Restorers killed, moving on.");
                     break;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(21, "Resource1A", 124);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(19, "Crossupper", 124);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(17, "Crosslower", 488, 483);
-            // }
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(15, "Morale1A", 862, 268);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
 
-            // if (!canSoloBoss)
-            // {
             while (!Bot.ShouldExit)
             {
                 Bot.Kill.Monster(13);
@@ -602,13 +634,16 @@ public class CoreFarms
                     Core.Logger("(B) Brawlers killed, moving on.");
                     break;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
-            // }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(23, "Morale1B", 860, 267);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
 
-            // if (!canSoloBoss)
-            // {
             while (!Bot.ShouldExit)
             {
                 Bot.Kill.Monster(14);
@@ -620,13 +655,16 @@ public class CoreFarms
                     Core.Logger("(B) Brawlers killed, moving on.");
                     break;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
-            // }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(25, "Morale1C", 857, 267);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
 
-            // if (!canSoloBoss)
-            // {
             while (!Bot.ShouldExit)
             {
                 Bot.Kill.Monster(15);
@@ -638,10 +676,15 @@ public class CoreFarms
                     Core.Logger("(B) Brawlers killed, moving on.");
                     break;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
-            // }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(28, "Captain1", 528, 255);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
 
             while (!Bot.ShouldExit)
             {
@@ -654,6 +697,8 @@ public class CoreFarms
                     Core.Logger("Team B Captain killed, moving on.");
                     break;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
 
             Bot.Wait.ForDrop(item, 40);
@@ -662,17 +707,43 @@ public class CoreFarms
 
             Core.Logger("Delaying exit");
             Core.Sleep(7500);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
+            else goto Exit;
 
-            int i = 1;
-            while (Bot.Map.Name != "battleon")
+
+            Exit:
+            while (!Bot.ShouldExit && Bot.Map.Name != "battleon")
             {
-                Core.Logger($"Attempting Exit {i++}.");
+                Core.Logger($"Attempting Exit {ExitAttempt++}.");
                 Bot.Map.Join("battleon-999999");
+                Bot.Combat.CancelTarget();
+                Bot.Wait.ForCombatExit();
                 Core.Sleep(1500);
                 if (Bot.Map.Name != "battleon")
                     Core.Logger("Failed!? HOW.. try agian");
+                else Core.Logger("Successful!");
+                goto Start;
             }
-            Core.Logger("Successful!");
+
+        RestartOnDeath:
+            Core.Logger($"Death: {Death++}, resetting");
+            while (!Bot.ShouldExit && !Bot.Player.Alive)
+            {
+                Bot.Wait.ForTrue(() => Bot.Player.Alive, 100);
+                Bot.Wait.ForCellChange("Enter0");
+                Core.Logger($"Attempting Exit {ExitAttempt++}.");
+                Bot.Map.Join("battleon-999999");
+                Bot.Wait.ForMapLoad("battleon");
+                Core.Sleep(1500);
+                if (Bot.Map.Name != "battleon")
+                    Core.Logger("Failed!? HOW.. try agian");
+                else
+                {
+                    Core.Logger("Successful!");
+                    goto Start;
+                }
+            }
         }
 
         foreach (string reward in new[] { "Yoshino's Citrine", "The Secret 4" })
@@ -680,6 +751,10 @@ public class CoreFarms
             if (item != reward && Bot.Inventory.Contains(reward))
                 Core.ToBank(reward);
         }
+
+        Core.Logger($"Deaths:[{Death}]");
+        Death = 0;
+        ExitAttempt = 0;
     }
 
     public void BattleUnderB(string item = "Bone Dust", int quant = 1, bool isTemp = false)
@@ -702,9 +777,9 @@ public class CoreFarms
             // 2067 - Secret Order of Undead Slayers
             if (!Core.isCompletedBefore(2067))
             {
-                Core.EnsureAccept(2082);
+                Core.EnsureAccept(2067);
                 Core.BuyItem("doomwood", 276, "Bonegrinder Medal");
-                Core.EnsureComplete(2082);
+                Core.EnsureComplete(2067);
             }
 
             // 2082 - Essential Essences
@@ -954,7 +1029,7 @@ public class CoreFarms
         Core.FarmingLogger("Dragon Runestone", quant);
 
         Gold((100000 * (quant - Bot.Inventory.GetQuantity("Dragon Runestone"))) - Bot.Inventory.GetQuantity("Gold Voucher 100k"));
-        Core.BuyItem("Alchemy", 395, "Gold Voucher 100k", (quant - Bot.Inventory.GetQuantity("Dragon Runestone")));
+        Core.BuyItem("Alchemy", 395, "Gold Voucher 100k", quant - Bot.Inventory.GetQuantity("Dragon Runestone"));
         Core.BuyItem("Alchemy", 395, "Dragon Runestone", quant, 8844);
     }
 
@@ -1046,7 +1121,7 @@ public class CoreFarms
         // Core.RegisterQuests(794, 795, 796, 797, 798, 799, 800, 801); //A Necessary Sacrifice 794, Gorillaphant Poaching 795, Mustard and Pretzel Root 796, Thyme and a Half 797, Thistle Do Nicely 798, Pleased to Meat You 799, ArcanRobe 800, Ebony and Ivory Tusks 801
         while (!Bot.ShouldExit && FactionRank("Arcangrove") < rank)
         {
-            Core.EnsureAccept(794, 795, 796, 797, 798, 799, 800, 801); //A Necessary Sacrifice 794, Gorillaphant Poaching 795, Mustard and Pretzel Root 796, Thyme and a Half 797, Thistle Do Nicely 798, Pleased to Meat You 799, ArcanRobe 800, Ebony and Ivory Tusks 801
+            Core.EnsureAcceptmultiple(false, new[] { 794, 795, 796, 797, 798, 799, 800, 801 }); //A Necessary Sacrifice 794, Gorillaphant Poaching 795, Mustard and Pretzel Root 796, Thyme and a Half 797, Thistle Do Nicely 798, Pleased to Meat You 799, ArcanRobe 800, Ebony and Ivory Tusks 801
             Core.HuntMonster("arcangrove", "Seed Spitter", "Spool of Arcane Thread", 10);
             Core.HuntMonster("arcangrove", "Seed Spitter", "Defeated Seed Spitter", 10);
             Core.HuntMonster("arcangrove", "Seed Spitter", "Bundle of Thyme", 10);
@@ -1157,27 +1232,29 @@ public class CoreFarms
         Core.Logger("Using Non-Gold Method");
         // Core.Logger($"If you can't Solo SlugButter, Either use the Gold method or Run the AP Script (Found in: Good-ArchPaladin) as it can Solo the boss 👍");
 
-        // Core.RegisterQuests(2777);
+        Core.RegisterQuests(2777);
         while (!Bot.ShouldExit && FactionRank("Blacksmithing") < 4 && !UseGold)
         {
-            Core.EnsureAccept(2777);
+            // Core.EnsureAccept(2777);
             Core.HuntMonster("greenguardeast", "Wolf", "Furry Lost Sock", 2, log: false);
             Core.HuntMonster("greenguardwest", "Slime", "Slimy Lost Sock", 5, log: false);
-            Core.EnsureComplete(2777);
+            // Core.EnsureComplete(2777);
         }
-        // Core.CancelRegisteredQuests();
+        Core.CancelRegisteredQuests();
 
-        // Core.RegisterQuests(8736);
+        // Core.AbandonQuest(2777);
+
+        Core.RegisterQuests(8736);
         while (!Bot.ShouldExit && FactionRank("Blacksmithing") < rank && !UseGold)
         {
-            Core.EnsureAccept(8736);
+            // Core.EnsureAccept(8736);
             Core.EquipClass(ClassType.Solo);
             Core.HuntMonster("hydrachallenge", "Hydra Head 25", "Hydra Scale Piece", 75, isTemp: false, log: false);
             Core.HuntMonster("maul", "Creature Creation", "Creature Shard", isTemp: false, log: false);
             Core.HuntMonster("towerofdoom", "Dread Klunk", "Monster Trophy", 15, isTemp: false, log: false);
-            Core.EnsureComplete(8736);
+            // Core.EnsureComplete(8736);
         }
-        // Core.CancelRegisteredQuests();
+        Core.CancelRegisteredQuests();
         ToggleBoost(BoostType.Reputation, false);
         Core.SavedState(false);
     }
@@ -1262,6 +1339,7 @@ public class CoreFarms
 
             if (!Core.isCompletedBefore(2937))
             {
+                Core.ResetQuest(2937);
                 Core.Logger($"Doing Quest: [2937] - \"Find the Runes!\"");
                 Core.EquipClass(ClassType.Solo);
                 Core.EnsureAccept(2937);
@@ -1384,16 +1462,16 @@ public class CoreFarms
             ToggleBoost(BoostType.Reputation);
             Core.Logger($"Farming rank {rank}");
 
-            // Core.RegisterQuests(2204); //Do the 'do 2204
+            Core.RegisterQuests(2204); //Do the 'do 2204
             while (!Bot.ShouldExit && FactionRank("ChronoSpan") < rank)
             {
-                Core.EnsureAccept(2204); //Do the 'do 2204
+                // Core.EnsureAccept(2204); //Do the 'do 2204
                 Core.KillMonster("thespan", "r6", "Left", "Moglin Ghost", "Tin of Ghost Dust", 2, log: false);
                 Core.KillMonster("thespan", "r4", "Left", "Minx Fairy", "8 oz Fairy Glitter", 3, log: false);
                 Core.KillMonster("thespan", "r4", "Left", "Tog", "Tog Fang", 4, log: false);
-                Core.EnsureComplete(2204); //Do the 'do 2204
+                // Core.EnsureComplete(2204); //Do the 'do 2204
             }
-            // Core.CancelRegisteredQuests();
+            Core.CancelRegisteredQuests();
             ToggleBoost(BoostType.Reputation, false);
             Core.SavedState(false);
         }
@@ -1464,7 +1542,7 @@ public class CoreFarms
         {
             Core.EnsureAccept(7875);
             Core.HuntMonster("timevoid", "Unending Avatar", "Everlasting Scale");
-            Core.EnsureComplete(7875);
+            Core.EnsureComplete(787);
 
             Core.EnsureAccept(7876);
             Core.HuntMonster($"twilightedge", "ChaosWeaver Warrior", "Chaotic Arachnid's Flesh");
@@ -1588,7 +1666,7 @@ public class CoreFarms
         // Core.RegisterQuests(320, 321); //Warm and Furry 320, Shell Shock 321
         while (!Bot.ShouldExit && FactionRank("Dwarfhold") < rank)
         {
-            Core.EnsureAccept(320, 321); //Warm and Furry 320, Shell Shock 321
+            Core.EnsureAcceptmultiple(false, new[] { 320, 321 }); //Warm and Furry 320, Shell Shock 321
             Core.KillMonster("pines", "Enter", "Right", "Pine Grizzly", "Bear Skin", 5, log: false);
             Core.KillMonster("pines", "Enter", "Right", "Red Shell Turtle", "Red Turtle Shell", 5, log: false);
             Core.EnsureComplete(new[] { 320, 321 }); //Warm and Furry 320, Shell Shock 321
@@ -1641,7 +1719,7 @@ public class CoreFarms
 
         while (!Bot.ShouldExit && FactionRank("Elemental Master") < rank)
         {
-            Core.EnsureAccept(3050, 3298);
+            Core.EnsureAcceptmultiple(false, new[] { 3050, 3298 });
             Core.EquipClass(ClassType.Farm);
             foreach (var element in elementalItems)
             {
@@ -1915,26 +1993,29 @@ public class CoreFarms
         Core.ToggleAggro(false);
 
         Core.Logger($"Farming rank {rank}");
-
-        if (!Core.isCompletedBefore(5155))
+        Core.Logger("Checking if farm quests are unlocked--");
+        if (Core.isCompletedBefore(5157))
         {
-            Core.EnsureAccept(5155);
-            DeathPitToken();
-            Core.EnsureComplete(5155);
+            Core.Logger("Unlocking farm quets");
+            if (!Core.isCompletedBefore(5155))
+            {
+                Core.EnsureAccept(5155);
+                DeathPitToken();
+                Core.EnsureComplete(5155);
+            }
+
+            if (!Core.isCompletedBefore(5156))
+                Core.ChainComplete(5156);
+
+            if (!Core.isCompletedBefore(5157))
+            {
+                Core.EnsureAccept(5157);
+                RunDeathPitBrawl("Death Pit Token", 1, 1);
+                Core.EnsureComplete(5157);
+            }
         }
 
-        if (!Core.isCompletedBefore(5156))
-            Core.ChainComplete(5156);
-
-        if (!Core.isCompletedBefore(5157))
-        {
-            Core.EnsureAccept(5157);
-            RunDeathPitBrawl("Death Pit Token", 1, 1);
-            Core.EnsureComplete(5157);
-        }
-
-        Core.ToggleAggro(false);
-
+        Core.Logger("Rep Time");
         RunDeathPitBrawl();
 
         Core.CancelRegisteredQuests();
@@ -1944,28 +2025,49 @@ public class CoreFarms
 
     void RunDeathPitBrawl(string item = "Death Pit Token", int quant = 1, int rank = 10)
     {
-        Core.RegisterQuests(5156, 5157, 5165);
+        foreach (int QID in new[] { 5156, 5157, 5165 })
+        {
+            if (Bot.Quests.IsUnlocked(QID))
+                Core.RegisterQuests(QID);
+        }
+
+        int ExitAttempt = 1;
+        int Death = 1;
+
+    Start:
         while (!Bot.ShouldExit && !Core.CheckInventory(item, quant) || FactionRank("Death Pit Brawl") < rank)
         {
             while (!Bot.ShouldExit && Bot.Map.Name != "deathpitbrawl")
             {
                 Core.Logger("Joining Brawl");
-                Core.Join("DeathPitbrawl", "Enter0", "Spawn");
+                Core.Join("deathpitbrawl-9999999", "Enter0", "Spawn");
                 Core.Sleep();
             }
 
             int Move = 1;
             Core.PvPMove(5, "Morale0C", 228, 291);
             Core.Logger($"Move: {Move++}");
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(4, "Morale0B", 936, 397);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}");
             Core.PvPMove(7, "Morale0A", 946, 394);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}");
             Core.PvPMove(9, "Crosslower", 948, 400);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}");
             Core.PvPMove(14, "Crossupper", 903, 324);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}");
             Core.PvPMove(18, "Resource1A", 482, 295);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}, Restorers");
 
             foreach (int mon in new[] { 9, 10 })
@@ -1978,9 +2080,16 @@ public class CoreFarms
                     Core.Join("battleon");
                     return;
                 }
+
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(20, "Resource1B", 938, 400);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}, Restorers room 2");
 
             foreach (int mon in new[] { 11, 12 })
@@ -1993,15 +2102,27 @@ public class CoreFarms
                     Core.Join("battleon");
                     return;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(21, "Resource1A", 9, 435);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}");
             Core.PvPMove(19, "Crossupper", 461, 315);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}");
             Core.PvPMove(17, "Crosslower", 54, 339);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}");
             Core.PvPMove(15, "Morale1A", 522, 286);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}, Velm's Brawler");
 
             foreach (int mon in new[] { 13 })
@@ -2014,9 +2135,15 @@ public class CoreFarms
                     Core.Join("battleon");
                     return;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(23, "Morale1B", 948, 403);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}, Velm's Brawler");
 
             foreach (int mon in new[] { 14 })
@@ -2029,9 +2156,15 @@ public class CoreFarms
                     Core.Join("battleon");
                     return;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(25, "Morale1C", 945, 397);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}, Velm's Brawler");
 
             foreach (int mon in new[] { 15 })
@@ -2044,9 +2177,15 @@ public class CoreFarms
                     Core.Join("battleon");
                     return;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.PvPMove(28, "Captain1", 943, 404);
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Logger($"Move: {Move++}, General Velm (B)");
 
             foreach (int mon in new[] { 16 })
@@ -2059,8 +2198,12 @@ public class CoreFarms
                     Core.Join("battleon");
                     return;
                 }
+                if (!Bot.Player.Alive)
+                    goto RestartOnDeath;
             }
 
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
             Core.Sleep(5000);
 
             Bot.Wait.ForDrop(item, 40);
@@ -2069,14 +2212,54 @@ public class CoreFarms
             Core.Logger("Delaying exit");
             Core.Sleep();
 
-            while (Bot.Map.Name != "battleon" && !Bot.Drops.Exists(item))
+            if (!Bot.Player.Alive)
+                goto RestartOnDeath;
+            else goto Exit;
+
+
+            Exit:
+            while (!Bot.ShouldExit && Bot.Map.Name != "battleon")
             {
-                int i = 1;
-                Core.Logger($"Attemping Exit {i++}.");
+                Core.Logger($"Attempting Exit {ExitAttempt++}.");
                 Bot.Map.Join("battleon-999999");
+                Bot.Combat.CancelTarget();
+                Bot.Wait.ForCombatExit();
                 Core.Sleep(1500);
+                if (Bot.Map.Name != "battleon")
+                    Core.Logger("Failed!? HOW.. try agian");
+                else Core.Logger("Successful!");
+                goto Start;
+            }
+
+        RestartOnDeath:
+            Core.Logger($"Death: {Death++}, resetting");
+            while (!Bot.ShouldExit && !Bot.Player.Alive)
+            {
+                Bot.Wait.ForTrue(() => Bot.Player.Alive, 100);
+                Bot.Wait.ForCellChange("Enter0");
+                Core.Logger($"Attempting Exit {ExitAttempt++}.");
+                Bot.Map.Join("battleon-999999");
+                Bot.Wait.ForMapLoad("battleon");
+                Core.Sleep(1500);
+                if (Bot.Map.Name != "battleon")
+                    Core.Logger("Failed!? HOW.. try agian");
+                else
+                {
+                    Core.Logger("Successful!");
+                    goto Start;
+                }
             }
         }
+
+        foreach (string reward in new[] { "Yoshino's Citrine", "The Secret 4" })
+        {
+            if (item != reward && Bot.Inventory.Contains(reward))
+                Core.ToBank(reward);
+        }
+
+        Core.Logger($"Deaths:[{Death}]");
+        Death = 0;
+        ExitAttempt = 0;
     }
 
     public void DeathPitToken(string item = "Death Pit Token", int quant = 30, bool isTemp = false)
@@ -2532,7 +2715,7 @@ public class CoreFarms
             // Core.RegisterQuests(916, 917, 919, 921, 922); //Dissertations Bupers Camel 916, Crafty Creepers: A Favorite of Mine 917, Parched Pets 919, Oasis Ornaments 921, The Power of Pomade 922
             while (!Bot.ShouldExit && FactionRank("Sandsea") < rank)
             {
-                Core.EnsureAccept(916, 917, 919, 921, 922);
+                Core.EnsureAcceptmultiple(false, new[] { 916, 917, 919, 921, 922 });
                 Core.HuntMonster("sandsea", "Bupers Camel", "Bupers Camel Document", 10, log: false);
                 Core.HuntMonster("sandsea", "Bupers Camel", "Barrel of Desert Water", 10, log: false);
                 Core.HuntMonster("sandsea", "Bupers Camel", "Flexible Camel Spit", 7, log: false);
@@ -2583,7 +2766,7 @@ public class CoreFarms
         // Core.RegisterQuests(7665, 7666, 7669);
         while (!Bot.ShouldExit && FactionRank("Somnia") < rank)
         {
-            Core.EnsureAccept(7665, 7666, 7669);
+            Core.EnsureAcceptmultiple(false, new[] { 7665, 7666, 7669 });
             Core.HuntMonster("somnia", "Nightspore", "Dream Truffle", 8, log: false);
             Core.HuntMonster("somnia", "Orpheum Elemental", "Orphium Ore", 8, log: false);
             Core.HuntMonster("somnia", "Dream Larva", "Dreamsilk", 5, log: false);
@@ -2652,7 +2835,7 @@ public class CoreFarms
             // Core.RegisterQuests(3065, 3066, 3067, 3070, 3085, 3086, 3087);
             while (!Bot.ShouldExit && FactionRank("Swordhaven") < rank)
             {
-                Core.EnsureAccept(3065, 3066, 3067, 3070, 3085, 3086, 3087);
+                Core.EnsureAcceptmultiple(false, new[] { 3065, 3066, 3067, 3070, 3085, 3086, 3087 });
                 Core.HuntMonster("castle", "Castle Spider", "Eradicated Arachnid", 10, log: false);
                 Core.HuntMonster("castle", "Castle Spider", "Castle Spider Silk", 8, log: false);
                 Core.HuntMonster("castle", "Castle Spider", "Castle Spider Silk Yarn", 2, log: false);

@@ -13,9 +13,9 @@ public class CitadelRuins
 {
     public IScriptInterface Bot => IScriptInterface.Instance;
     public CoreBots Core => CoreBots.Instance;
-    public CoreFarms Farm = new CoreFarms();
+    public CoreFarms Farm = new();
     public CoreNation Nation = new();
-    public CoreStory Story = new CoreStory();
+    public CoreStory Story = new();
 
     public string[] rewards = { "Purified Claymore of Destiny", "Good Iron Wing 1", "Spinal Tap of Retribution", "Purified Claw of Nulgath", "Mage's Gratitude" };
 
@@ -204,7 +204,7 @@ public class CitadelRuins
             Nation.FarmTaintedGem(7);
             Nation.Supplies("Claw of Nulgath");
 
-            Nation.ResetQuest(7551);
+            Core.ResetQuest(7551);
             while (!Bot.ShouldExit && !Core.CheckInventory("Dark Makai Sigil"))
             {
                 // Define the maps with their corresponding indexes

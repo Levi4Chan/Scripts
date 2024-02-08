@@ -76,6 +76,7 @@ public class CoreBLOD
         if (Core.CheckInventory("Blinding Light of Destiny"))
             return;
 
+        Core.AddDrop(40187);
         if (!Core.CheckInventory(40187)) // Get your Blinding Light of Destiny
         {
             Bot.Drops.Add(BLoDItems);
@@ -106,7 +107,6 @@ public class CoreBLOD
             UltimateWK();
 
             Core.ChainComplete(2180);
-            Bot.Drops.Pickup(40187);
         }
         Core.BuyItem(Bot.Map.Name, 1415, "Blinding Light of Destiny");
         Core.ToBank(40187);
@@ -249,23 +249,26 @@ public class CoreBLOD
         Core.AddDrop("Cavern Celestite", "Undead Essence");
         if (farmSpiritOrbs)
         {
-            Core.RegisterQuests(2082, 2083); // Bone Some Dust & Essential Essences
+            Core.RegisterQuests(2082, 2083, 939); // Bone Some Dust, Essential Essences, Soul Searching
             Core.AddDrop("Bone Dust", "Undead Energy", "Spirit Orb");
         }
 
         while (!Bot.ShouldExit && !Core.CheckInventory(item, quant))
         {
-            Core.EnsureAccept(939);
-
             Core.KillMonster("battleundera", "r7", "Left", "Bone Terror", "Bone Terror Soul", log: false);
             Core.KillMonster("battleunderb", "r3", "Right", "Undead Champion", "Undead Champion Soul", log: false);
             Core.KillMonster("battleunderc", "r5", "Left", "Crystalized Jellyfish", "Jellyfish Soul", log: false);
-
-            Core.EnsureComplete(939);
             Bot.Wait.ForPickup(item);
-
         }
         Core.CancelRegisteredQuests();
+
+        /* 
+        using register quest + accept and complete seems to break
+        things.. not sure how to solve this besides just picking
+        
+             Core.EnsureAccept(939);
+             Core.EnsureComplete(939);
+        */
     }
 
     //Unused, here for archiving purposes I guess... ~Exe

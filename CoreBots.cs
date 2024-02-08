@@ -293,7 +293,7 @@ public class CoreBots
     }
 
     public List<string> BankingBlackList = new();
-    private List<string> EquipmentBeforeBot = new();
+    private readonly List<string> EquipmentBeforeBot = new();
     private bool joinedPrison = false;
     private bool prisonListernerActive = false;
     public string loadedBot = String.Empty;
@@ -1373,6 +1373,8 @@ public class CoreBots
         if (questCTS is not null)
             CancelRegisteredQuests();
 
+        Bot.Lite.ReacceptQuest = true;
+
         // Defining all the lists to be used=
         List<Quest> questData = EnsureLoad(questIDs);
         Dictionary<Quest, int> chooseQuests = new();
@@ -1402,7 +1404,7 @@ public class CoreBots
         }
 
         registeredQuests = questIDs;
-        EnsureAccept(questIDs);
+        EnsureAcceptmultiple(true, questIDs);
         questCTS = new();
         Task.Run(async () =>
         {
@@ -1416,14 +1418,14 @@ public class CoreBots
                     foreach (KeyValuePair<Quest, int> kvp in nonChooseQuests)
                     {
                         if (!Bot.Quests.IsInProgress(kvp.Key.ID))
-                            EnsureAccept(kvp.Key.ID);
+                            EnsureAccept(kvp.Key.ID, true);
                         if (Bot.Quests.CanCompleteFullCheck(kvp.Key.ID))
                         {
                             int amountTurnedIn = EnsureCompleteMulti(kvp.Key.ID);
                             if (amountTurnedIn == 0)
                                 continue;
                             await Task.Delay(ActionDelay);
-                            EnsureAccept(kvp.Key.ID);
+                            EnsureAccept(kvp.Key.ID, true);
                             nonChooseQuests[kvp.Key] = nonChooseQuests[kvp.Key] + amountTurnedIn;
                             Logger($"Quest completed x{nonChooseQuests[kvp.Key]} times: [{kvp.Key.ID}] \"{kvp.Key.Name}\"");
                         }
@@ -1433,7 +1435,7 @@ public class CoreBots
                     foreach (KeyValuePair<Quest, int> kvp in chooseQuests)
                     {
                         if (!Bot.Quests.IsInProgress(kvp.Key.ID))
-                            EnsureAccept(kvp.Key.ID);
+                            EnsureAccept(kvp.Key.ID, true);
 
                         if (Bot.Quests.CanCompleteFullCheck(kvp.Key.ID))
                         {
@@ -1453,14 +1455,14 @@ public class CoreBots
                             {
                                 EnsureCompleteMulti(kvp.Key.ID);
                                 await Task.Delay(ActionDelay);
-                                EnsureAccept(kvp.Key.ID);
+                                EnsureAccept(kvp.Key.ID, true);
                                 continue;
                             }
 
                             Bot.Drops.Add(kvp.Key.Rewards.Where(x => simpleRewards.Any(t => t.ID == x.ID)).Select(i => i.Name).ToArray());
                             EnsureCompleteMulti(kvp.Key.ID, simpleRewards.First().ID);
                             await Task.Delay(ActionDelay);
-                            EnsureAccept(kvp.Key.ID);
+                            EnsureAccept(kvp.Key.ID, true);
                             Logger($"Quest completed x{chooseQuests[kvp.Key]++} times: [{kvp.Key.ID}] \"{kvp.Key.Name}\" (Got \"{kvp.Key.Rewards.First(x => x.ID == simpleRewards.First().ID).Name}\")");
                         }
                     }
@@ -1479,8 +1481,10 @@ public class CoreBots
     /// </summary>
     public void CancelRegisteredQuests()
     {
+        Bot.Lite.ReacceptQuest = false;
         questCTS?.Cancel();
         Bot.Wait.ForTrue(() => questCTS == null, 30);
+        Bot.Quests.UnregisterQuests(registeredQuests!);
         AbandonQuest(registeredQuests!);
         registeredQuests = null;
     }
@@ -1490,9 +1494,12 @@ public class CoreBots
     /// Ensures you are out of combat before accepting the quest
     /// </summary>
     /// <param name="questID">ID of the quest to accept</param>
-    public bool EnsureAccept(int questID)
+    public bool EnsureAccept(int questID = 0, bool Registerquest = false)
     {
         Quest QuestData = EnsureLoad(questID);
+
+        if (Registerquest)
+            Bot.Lite.ReacceptQuest = true;
 
         if (QuestData.Upgrade && !IsMember)
             Logger($"\"{QuestData.Name}\" [{questID}] is member-only, stopping the bot.", stopBot: true);
@@ -1535,13 +1542,23 @@ public class CoreBots
     }
 
 
+
+
     /// <summary>
     /// Accepts all the quests given
     /// </summary>
     /// <param name="questIDs">IDs of the quests</param>
-    public void EnsureAccept(params int[] questIDs)
+    public void EnsureAcceptmultiple(bool RegisterQuest = false, params int[]? questIDs)
     {
-        List<Quest> QuestData = EnsureLoad(questIDs);
+        if (questIDs == null || questIDs.Length == 0)
+        {
+            questIDs = new int[] { 0 }; // Default value
+        }
+
+        List<Quest> QuestData = EnsureLoad(questIDs?.Where(q => q > 0).ToArray() ?? Array.Empty<int>());
+
+        if (RegisterQuest)
+            Bot.Lite.ReacceptQuest = true;
 
         foreach (Quest quest in QuestData)
         {
@@ -1593,29 +1610,54 @@ public class CoreBots
     /// </summary>
     /// <param name="questID">ID of the quest to complete</param>
     /// <param name="itemID">ID of the choose-able reward item</param>
-    public bool EnsureComplete(int questID, int itemID = -1)
+    public bool EnsureComplete(int questID, int itemID = -1, bool RegisterQuest = false)
     {
         if (questID <= 0)
             return false;
+
+        Quest questData = EnsureLoad(questID);
+        EnsureLoad(questData.ID);
+        Bot.Lite.ReacceptQuest = false;
+
         Sleep();
-        return Bot.Quests.EnsureComplete(questID, itemID);
+
+        if (questData != null && questData.Requirements != null
+                        && (!questData.Requirements.Any()
+                        || questData.Requirements.All(r => r != null && r.ID > 0)
+                        && CheckInventory(questData.Requirements.Select(x => x.ID).ToArray())))
+        {
+            Bot.Quests.EnsureComplete(questID, itemID);
+            if (RegisterQuest)
+                Bot.Lite.ReacceptQuest = true;
+            return true;
+        }
+        else
+        {
+            if (RegisterQuest)
+                Bot.Lite.ReacceptQuest = true;
+            return false;
+        }
     }
 
-    /// <summary>
+
+    // <summary>
     /// Completes all the quests given but doesn't support quests with choose-able rewards
     /// </summary>
     /// <param name="questIDs">IDs of the quests</param>
     public void EnsureComplete(params int[] questIDs)
     {
-        EnsureLoad(questIDs);
-        foreach (var q in questIDs)
+        List<Quest> questData = EnsureLoad(questIDs);
+
+        foreach (Quest questID in questData)
         {
-            var questData = EnsureLoad(q);
-            if (questData != null && questData.Requirements != null
-            && questData.Requirements.Any()
-            && CheckInventory(questData.Requirements.Select(x => x.ID).ToArray()))
+            EnsureLoad(questID.ID);
+
+            if (questData != null && questID.Requirements != null
+                && (!questID.Requirements.Any()
+                || questID.Requirements.All(r => r != null && r.ID > 0)
+                && CheckInventory(questID.Requirements.Select(x => x.ID).ToArray())))
             {
-                Bot.Quests.EnsureComplete(q);
+                Bot.Quests.EnsureComplete(questID.ID);
                 Sleep();
             }
         }
@@ -1629,10 +1671,11 @@ public class CoreBots
     /// <param name="itemList">List of the items to get, if you want all just let it be null</param>
     public bool EnsureCompleteChoose(int questID, string[]? itemList = null)
     {
-        EnsureLoad(questID);
+        Quest quest = EnsureLoad(questID);
+
+        EnsureLoad(quest.ID);
         Sleep();
 
-        Quest quest = EnsureLoad(questID);
         if (quest is not null)
         {
             foreach (ItemBase item in quest.Rewards)
@@ -1807,9 +1850,9 @@ public class CoreBots
                 Gold = data.Gold,
                 XP = data.XP,
                 Status = null!, // Not found in QuestData
+                                //Active is based on Stat
                                 //Active is based on Status being NULL or not
-                AcceptRequirements = data.AcceptRequirements,
-                //Requirements cant be writen to
+                                //Requirements cant be writen to
                 Rewards = data.Rewards,
                 SimpleRewards = data.SimpleRewards,
             };
@@ -1879,7 +1922,7 @@ public class CoreBots
         }
         catch
         {
-            QuestData = Bot.Quests.EnsureLoad(QuestID);
+            QuestData = EnsureLoad(QuestID);
             return QuestData?.Slot < 0 || Bot.Flash.CallGameFunction<int>("world.getQuestValue", QuestData!.Slot) >= QuestData.Value;
         }
     }
@@ -3221,7 +3264,7 @@ public class CoreBots
             cellPad = ("Enter", "Spawn");
         else
         {
-            blackListedCells.AddRange(new List<string>() { "Wait", "Blank" });
+            blackListedCells.AddRange(new List<string>() { "Wait", "Blank", "Out" });
             blackListedCells.AddRange(Bot.Map.Cells.Where(x => x.StartsWith("Cut")));
             var viableCells = Bot.Map.Cells.Except(blackListedCells);
             if (viableCells.Any())
@@ -3328,6 +3371,9 @@ public class CoreBots
                 SimpleQuestBypass((49, 25));
                 break;
 
+            case "wanders":
+                SimpleQuestBypass((176, 6));
+                break;
 
             case "kitsune":
                 SimpleQuestBypass((25, 22));
@@ -3382,7 +3428,6 @@ public class CoreBots
                 SimpleQuestBypass((126, 18));
                 break;
 
-            case "wanders":
             case "pyramid":
             case "djinn":
                 SimpleQuestBypass((36, 28));
@@ -3616,30 +3661,30 @@ public class CoreBots
             case "dagepvp":
             case "deathpitbrawl":
             // Room Limit: 1
-            case "finalbattle":
-            case "treetitanbattle":
+            case "baconcat":
+            case "baconcatb":
+            case "caroling":
+            case "chaosbattle":
+            case "chaoslord":
             case "chaosrealm":
-            case "vordredboss":
-            case "trickortreat":
+            case "darkthronehub":
             case "drakathfight":
             case "dragonfire":
-            case "darkthronehub":
-            case "malgor":
-            case "chaosbattle":
-            case "baconcatyou":
-            case "herotournament":
-            case "finalshowdown":
             case "dragonkoi":
-            case "chaoslord":
-            case "ravenscar":
-            case "nothing":
             case "falcontower":
-            case "baconcatb":
-            case "baconcat":
-            case "tlapd":
-            case "superslayin":
+            case "finalbattle":
+            case "finalshowdown":
+            case "herotournament":
             case "infernalarena":
-            case "caroling":
+            case "malgor":
+            case "nothing":
+            case "oaklore":
+            case "ravenscar":
+            case "superslayin":
+            case "treetitanbattle":
+            case "tlapd":
+            case "trickortreat":
+            case "vordredboss":
                 // Special
                 JumpWait();
                 map = strippedMap + "-999999";
@@ -3975,6 +4020,18 @@ public class CoreBots
         if (!Int32.TryParse(Bot.Map.FullName.Split('-').Last(), out int nr))
             nr = 1;
         return nr < 1000;
+    }
+
+    public void ResetQuest(int QuestID = 0000)
+    {
+        // Dark makai and their Sigils / Runes are fucky... use this with the aproriate QuestID below:
+        // Swindles Return: 7551
+        // Diamond Exchange: 869
+
+        EnsureAccept(QuestID);
+        Bot.Wait.ForQuestAccept(QuestID, 20);
+        AbandonQuest(QuestID);
+        EnsureAccept(QuestID);
     }
 
     /// <summary>
