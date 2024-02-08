@@ -11608,6 +11608,19 @@
     "downloadUrl": "https://raw.githubusercontent.com/BrenoHenrike/Scripts/Skua/Seasonal/Frostvale/CarolingMerge.cs"
   },
   {
+    "name": "Glace Tomb",
+    "description": "This will finish the Glace Tomb Storyline.",
+    "tags": [
+      "glace-tomb-story",
+      "seasonal",
+      "frostvale"
+    ],
+    "path": "Seasonal/Frostvale/GlaceTomb.cs",
+    "size": 2445,
+    "fileName": "GlaceTomb.cs",
+    "downloadUrl": "https://raw.githubusercontent.com/BrenoHenrike/Scripts/Skua/Seasonal/Frostvale/GlaceTomb.cs"
+  },
+  {
     "name": "Kaiju War",
     "description": "This will farm the Kaiju War items.",
     "tags": [
